@@ -6,6 +6,8 @@
         <item name="android:windowBackground">
             @android:color/white
         </item>
+        <item name="android:fontFamily">@font/prompt_semibold</item>
+
     </style>
 
     <style name="Theme.Sip_sip_mobile_app" parent="Base.Theme.Sip_sip_mobile_app" />
