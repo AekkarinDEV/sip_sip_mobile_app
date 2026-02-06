@@ -15,7 +15,6 @@ class UserSetup : AppCompatActivity() {
         enableEdgeToEdge()
         setContentView(R.layout.activity_user_setup)
 
-        // ✅ ปลอดภัย: เช็ค null ก่อน
         val mainView: View? = findViewById(R.id.main)
 
         mainView?.let { view ->

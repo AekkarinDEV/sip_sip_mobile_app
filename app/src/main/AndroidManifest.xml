@@ -12,13 +12,16 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Sip_sip_mobile_app">
         <activity
+            android:name=".UserSetup"
+            android:exported="false" />
+        <activity
             android:name=".Login"
             android:exported="false" />
         <activity
             android:name=".Register"
             android:exported="false" />
         <activity
-            android:name=".UserSetup"
+            android:name=".UserSetupProfile"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
