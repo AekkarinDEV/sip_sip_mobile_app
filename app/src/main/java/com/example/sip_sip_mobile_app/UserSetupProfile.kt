@@ -87,7 +87,16 @@ class UserSetupProfile : AppCompatActivity() {
 
 
 
-        btnSkip.setOnClickListener { startActivity(Intent(this, Settings::class.java)) }
+        btnSkip.setOnClickListener {
+            db.collection("users")
+                .document(uid)
+                .update("setupCompleted", true)
+                .addOnSuccessListener {
+                    startActivity(Intent(this, Settings::class.java))
+                    finish()
+                }
+        }
+
         btnBack.setOnClickListener { finish() }
     }
 

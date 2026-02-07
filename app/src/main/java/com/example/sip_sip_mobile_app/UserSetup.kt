@@ -102,10 +102,15 @@ class UserSetup : AppCompatActivity() {
                 .document("basic")
                 .set(profileData)
                 .addOnSuccessListener {
-                    Toast.makeText(this, "บันทึกข้อมูลสำเร็จ", Toast.LENGTH_SHORT).show()
+                    // ✅ ยังไม่เสร็จ 100% แต่ผ่าน step แรก
+                    db.collection("users")
+                        .document(uid)
+                        .update("setupCompleted", false)
+
                     startActivity(Intent(this, UserSetupProfile::class.java))
-                    // TODO: ไปหน้าถัดไป
+                    finish()
                 }
+
                 .addOnFailureListener {
                     Toast.makeText(this, it.message, Toast.LENGTH_SHORT).show()
                 }
