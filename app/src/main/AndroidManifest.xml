@@ -13,33 +13,48 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Sip_sip_mobile_app">
+
+        <!--Splash-->
         <activity
-            android:name=".Settings"
-            android:exported="false" />
-        <activity
-            android:name=".TestProfile"
-            android:exported="false" />
-        <activity
-            android:name=".UserSetup"
-            android:exported="false" />
-        <activity
-            android:name=".UserSetupProfile"
-            android:exported="false" />
-        <activity
-            android:name=".Register"
-            android:exported="false" />
-        <activity
-            android:name=".Login"
+            android:name=".SplashActivity"
+            android:theme="@style/Theme.Sip_sip_mobile_app.Splash"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+
+        <!-- หน้าต่าง ๆ -->
+        <activity
+            android:name=".Login"
+            android:exported="false" />
+
+        <activity
+            android:name=".Register"
+            android:exported="false" />
+
+        <activity
+            android:name=".UserSetup"
+            android:exported="false" />
+
+        <activity
+            android:name=".UserSetupProfile"
+            android:exported="false" />
+
+        <activity
+            android:name=".Settings"
+            android:exported="false" />
+
         <activity
             android:name=".MainActivity"
             android:exported="false" />
+
+        <activity
+            android:name=".TestProfile"
+            android:exported="false" />
+
     </application>
 
 </manifest>

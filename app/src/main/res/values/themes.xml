@@ -6,12 +6,7 @@
 
         <!-- Global font -->
         <item name="android:fontFamily">@font/prompt_semibold</item>
-
-        <!-- Optional: ถ้าอยากคุมสีหลัก -->
-        <!--
-        <item name="colorPrimary">@color/primary</item>
-        <item name="colorSecondary">@color/secondary</item>
-        -->
+        <item name="android:windowBackground">@android:color/white</item>
 
     </style>
 
@@ -24,5 +19,11 @@
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">50%</item>
     </style>
+
+    <style name="Theme.Sip_sip_mobile_app.Splash" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="android:windowBackground">@android:color/white</item>
+        <item name="android:statusBarColor">@android:color/white</item>
+    </style>
+
 
 </resources>

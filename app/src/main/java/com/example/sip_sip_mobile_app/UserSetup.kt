@@ -102,7 +102,6 @@ class UserSetup : AppCompatActivity() {
                 .document("basic")
                 .set(profileData)
                 .addOnSuccessListener {
-                    // ✅ ยังไม่เสร็จ 100% แต่ผ่าน step แรก
                     db.collection("users")
                         .document(uid)
                         .update("setupCompleted", false)

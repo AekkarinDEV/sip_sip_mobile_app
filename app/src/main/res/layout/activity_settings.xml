@@ -141,7 +141,7 @@
                     android:layout_marginTop="12dp"
                     android:background="@drawable/edittext_bg"
                     android:hint="เพศ"
-                    android:text="ชาย"
+
                     android:focusable="false"
                     android:clickable="false"
                     android:cursorVisible="false"

@@ -247,13 +247,20 @@ class Settings : AppCompatActivity() {
             .collection("profile").document("basic")
             .get()
             .addOnSuccessListener { doc ->
-                etActivityView.setText(doc.getString("activity") ?: "")
-                etActivityEdit.setText(doc.getString("activity") ?: "", false)
+
+                val gender = doc.getString("gender") ?: ""
+                val activity = doc.getString("activity") ?: ""
+
+                etGender.setText(gender)
+                etActivityView.setText(activity)
+                etActivityEdit.setText(activity, false)
+
                 etWeight.setText(doc.getLong("weight")?.toString() ?: "")
                 etStartTime.setText(doc.getString("wakeTime") ?: "")
                 etEndTime.setText(doc.getString("sleepTime") ?: "")
                 switchNotify.isChecked = doc.getBoolean("notify") ?: false
             }
+
     }
     private fun saveProfileData(uid: String, profileData: HashMap<String, Any>) {
         db.collection("users")

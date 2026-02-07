@@ -27,7 +27,7 @@ class Login : AppCompatActivity() {
         auth = FirebaseAuth.getInstance()
         db = FirebaseFirestore.getInstance()
 
-        // 🔹 ถ้า login ค้างอยู่ → เช็คว่า setup เสร็จยัง
+        // ถ้า login ค้างอยู่ → เช็คว่า setup เสร็จยัง
         val user = auth.currentUser
         if (user != null) {
             db.collection("users")
