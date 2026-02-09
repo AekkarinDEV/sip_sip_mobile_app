@@ -1,12 +1,29 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Base.Theme.Sip_sip_mobile_app" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
-        <item name="android:windowBackground">
-            @android:color/white
-        </item>
+
+    <!-- Base application theme -->
+    <style name="Base.Theme.Sip_sip_mobile_app"
+        parent="Theme.Material3.DayNight.NoActionBar">
+
+        <!-- Global font -->
+        <item name="android:fontFamily">@font/prompt_semibold</item>
+        <item name="android:windowBackground">@android:color/white</item>
+
     </style>
 
-    <style name="Theme.Sip_sip_mobile_app" parent="Base.Theme.Sip_sip_mobile_app" />
+    <!-- App theme -->
+    <style name="Theme.Sip_sip_mobile_app"
+        parent="Base.Theme.Sip_sip_mobile_app" />
+
+    <!-- Circle image style -->
+    <style name="CircleImage">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">50%</item>
+    </style>
+
+    <style name="Theme.Sip_sip_mobile_app.Splash" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="android:windowBackground">@android:color/white</item>
+        <item name="android:statusBarColor">@android:color/white</item>
+    </style>
+
+
 </resources>
