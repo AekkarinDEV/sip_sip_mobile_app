@@ -107,7 +107,10 @@ class Settings : AppCompatActivity() {
             saveProfile()
         }
 
-        btnBack.setOnClickListener { finish() }
+        btnBack.setOnClickListener {
+            val intent = Intent(this, Planting::class.java)
+            startActivity(intent)
+        }
         btnLogout.setOnClickListener {
             logout()
         }

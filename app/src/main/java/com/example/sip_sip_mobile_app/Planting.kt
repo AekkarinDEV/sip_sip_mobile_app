@@ -16,5 +16,9 @@ class Planting : AppCompatActivity() {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
+
+        // Setup bottom navigation
+        val bottomNavManager = BottomNavManager(this)
+        bottomNavManager.setupBottomNavigation()
     }
 }
