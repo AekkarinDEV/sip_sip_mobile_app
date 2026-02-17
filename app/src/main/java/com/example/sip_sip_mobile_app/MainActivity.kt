@@ -8,11 +8,13 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.bumptech.glide.Glide
+import com.google.android.material.slider.Slider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
@@ -59,8 +61,30 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showCustomIntakeDialog() {
-        // Implement a dialog to get custom intake volume
-        Toast.makeText(this, "Custom intake not implemented yet", Toast.LENGTH_SHORT).show()
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_custom_intake, null)
+        val slider = dialogView.findViewById<Slider>(R.id.sliderCustomVolume)
+        val tvSliderValue = dialogView.findViewById<TextView>(R.id.tvSliderValue)
+
+        slider.addOnChangeListener { _, value, _ ->
+            tvSliderValue.text = "${value.toInt()} ml"
+        }
+
+        AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setPositiveButton("บันทึก") { dialog, _ ->
+                val volume = slider.value.toInt()
+                if (volume > 0) {
+                    logIntake("Custom", volume)
+                } else {
+                    Toast.makeText(this, "กรุณาระบุปริมาณที่มากกว่า 0", Toast.LENGTH_SHORT).show()
+                }
+                dialog.dismiss()
+            }
+            .setNegativeButton("ยกเลิก") { dialog, _ ->
+                dialog.cancel()
+            }
+            .create()
+            .show()
     }
 
     private fun logIntake(type: String, volume: Int) {
