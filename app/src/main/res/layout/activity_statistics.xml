@@ -208,7 +208,7 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android.text="ดีที่สุด"
+                                android:text="ดีที่สุด"
                                 android:textColor="#999999"
                                 android:textSize="12sp" />
                         </LinearLayout>
@@ -254,12 +254,10 @@
                                     android:src="@drawable/ic_star_circle" />
 
                                 <TextView
+                                    android:id="@+id/tvOverallAverage"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:text="2.1 L"
-                                    android:textColor="#333333"
-                                    android:textSize="18sp"
-                                    android:textStyle="bold" />
+                                    android:text="0.00 L"/>
 
                                 <TextView
                                     android:layout_width="wrap_content"
@@ -295,12 +293,11 @@
                                     android:src="@drawable/ic_water_drop" />
 
                                 <TextView
+                                    android:id="@+id/tvOverallTotal"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:text="64 liters"
-                                    android:textColor="#333333"
-                                    android:textSize="18sp"
-                                    android:textStyle="bold" />
+                                    android:text="0 L"/>
+
 
                                 <TextView
                                     android:layout_width="wrap_content"
