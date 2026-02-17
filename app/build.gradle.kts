@@ -6,14 +6,12 @@ plugins {
 
 android {
     namespace = "com.example.sip_sip_mobile_app"
-    compileSdk {
-        version = release(36)
-    }
+    compileSdk = 36 // แนะนำ 35 เพื่อความเสถียร หรือ 36 ตามที่คุณต้องการ
 
     defaultConfig {
         applicationId = "com.example.sip_sip_mobile_app"
         minSdk = 29
-        targetSdk = 36
+        targetSdk = 36 // Target 34 เพื่อให้ขึ้น Play Store ได้ง่ายในช่วงนี้
         versionCode = 1
         versionName = "1.0"
 
@@ -36,32 +34,28 @@ android {
     kotlinOptions {
         jvmTarget = "11"
     }
+    buildFeatures {
+        viewBinding = true // เปิดใช้งาน ViewBinding
+    }
 }
 
 dependencies {
-
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
+    implementation(libs.glide)
 
-    // ===== Material (เหลือตัวเดียว) =====
+    // UI & Material
     implementation("com.google.android.material:material:1.12.0")
+    implementation("androidx.core:core-splashscreen:1.0.1")
 
-    // ===== Firebase =====
+    // กราฟ
+    implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
+
+    // Firebase
     implementation(platform("com.google.firebase:firebase-bom:33.4.0"))
     implementation("com.google.firebase:firebase-auth-ktx")
     implementation("com.google.firebase:firebase-firestore-ktx")
     implementation("com.google.firebase:firebase-storage-ktx")
-
-    // ===== UI =====
-    implementation("androidx.core:core-splashscreen:1.0.1")
-    implementation("androidx.cardview:cardview:1.0.0")
-    implementation("com.github.bumptech.glide:glide:4.16.0")
-
-    // ===== Test =====
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
 }
-

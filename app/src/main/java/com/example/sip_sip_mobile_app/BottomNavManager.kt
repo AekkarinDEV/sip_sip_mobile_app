@@ -22,8 +22,8 @@ class BottomNavManager(private val activity: Activity, private val bottomNavView
         }
 
         btnStat.setOnClickListener {
-            if (activity !is StatisticsActivity) {
-                val intent = Intent(activity, StatisticsActivity::class.java)
+            if (activity !is Statistics) {
+                val intent = Intent(activity, Statistics::class.java)
                 intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
                 activity.startActivity(intent)
             }

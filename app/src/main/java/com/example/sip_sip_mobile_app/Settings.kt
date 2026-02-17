@@ -26,7 +26,7 @@ class Settings : AppCompatActivity() {
     private lateinit var auth: FirebaseAuth
     private lateinit var db: FirebaseFirestore
     private lateinit var btnLogout: MaterialButton
-    private val storage by lazy { FirebaseStorage.getInstance() }
+    private val storage: FirebaseStorage by lazy { FirebaseStorage.getInstance() }
 
     // ===== header =====
     private lateinit var imgAvatar: ShapeableImageView
