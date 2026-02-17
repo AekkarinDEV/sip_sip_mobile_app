@@ -108,12 +108,17 @@ class Settings : AppCompatActivity() {
         }
 
         btnBack.setOnClickListener {
-            val intent = Intent(this, Planting::class.java)
+            val intent = Intent(this, MainActivity::class.java)
             startActivity(intent)
         }
         btnLogout.setOnClickListener {
             logout()
         }
+
+        // Setup bottom navigation
+        val bottomNavView = findViewById<View>(R.id.layout_bottom_nav)
+        val bottomNavManager = BottomNavManager(this, bottomNavView)
+        bottomNavManager.setupBottomNavigation()
 
     }
 

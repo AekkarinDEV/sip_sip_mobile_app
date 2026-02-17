@@ -2,15 +2,16 @@ package com.example.sip_sip_mobile_app
 
 import android.app.Activity
 import android.content.Intent
+import android.view.View
 import android.widget.LinearLayout
 
-class BottomNavManager(private val activity: Activity) {
+class BottomNavManager(private val activity: Activity, private val bottomNavView: View) {
 
     fun setupBottomNavigation() {
-        val btnHome = activity.findViewById<LinearLayout>(R.id.btnHome)
-        val btnStat = activity.findViewById<LinearLayout>(R.id.btnStat)
-        val btnTree = activity.findViewById<LinearLayout>(R.id.btnTree)
-        val btnSetting = activity.findViewById<LinearLayout>(R.id.btnSetting)
+        val btnHome = bottomNavView.findViewById<LinearLayout>(R.id.btnHome)
+        val btnStat = bottomNavView.findViewById<LinearLayout>(R.id.btnStat)
+        val btnTree = bottomNavView.findViewById<LinearLayout>(R.id.btnTree)
+        val btnSetting = bottomNavView.findViewById<LinearLayout>(R.id.btnSetting)
 
         btnHome.setOnClickListener {
             if (activity !is MainActivity) {

@@ -1,6 +1,7 @@
 package com.example.sip_sip_mobile_app
 
 import android.os.Bundle
+import android.view.View
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
@@ -18,7 +19,8 @@ class Planting : AppCompatActivity() {
         }
 
         // Setup bottom navigation
-        val bottomNavManager = BottomNavManager(this)
+        val bottomNavView = findViewById<View>(R.id.layout_bottom_nav)
+        val bottomNavManager = BottomNavManager(this, bottomNavView)
         bottomNavManager.setupBottomNavigation()
     }
 }
