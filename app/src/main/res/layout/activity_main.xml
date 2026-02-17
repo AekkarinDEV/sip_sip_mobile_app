@@ -46,6 +46,7 @@
                             app:cardElevation="0dp">
 
                             <ImageView
+                                android:id="@+id/imgAvatar"
                                 android:layout_width="match_parent"
                                 android:layout_height="match_parent"
                                 android:scaleType="centerCrop"
@@ -53,6 +54,7 @@
                         </androidx.cardview.widget.CardView>
 
                         <TextView
+                            android:id="@+id/tvUsername"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginStart="12dp"
@@ -83,7 +85,7 @@
                     android:textColor="#757575"
                     android:textSize="16sp"
                     app:layout_constraintBottom_toTopOf="@+id/layoutProgressText"
-                    app:layout_constraintStart_toEndOf="@+id/imgMainGlass"
+                    app:layout_constraintStart_toEndOf="@id/imgMainGlass"
                     app:layout_constraintTop_toTopOf="@+id/imgMainGlass"
                     app:layout_constraintVertical_chainStyle="packed" />
 
