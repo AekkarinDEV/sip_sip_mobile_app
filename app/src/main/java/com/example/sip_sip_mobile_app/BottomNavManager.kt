@@ -22,7 +22,11 @@ class BottomNavManager(private val activity: Activity, private val bottomNavView
         }
 
         btnStat.setOnClickListener {
-            // Statistics page not yet created
+            if (activity !is StatisticsActivity) {
+                val intent = Intent(activity, StatisticsActivity::class.java)
+                intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                activity.startActivity(intent)
+            }
         }
 
         btnTree.setOnClickListener {
