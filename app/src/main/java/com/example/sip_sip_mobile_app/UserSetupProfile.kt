@@ -79,7 +79,7 @@ class UserSetupProfile : AppCompatActivity() {
                     .document(uid)
                     .update("setupCompleted", true)
                     .addOnSuccessListener {
-                        startActivity(Intent(this, Settings::class.java))
+                        startActivity(Intent(this, MainActivity::class.java))
                         finish()
                     }
             }
@@ -92,7 +92,7 @@ class UserSetupProfile : AppCompatActivity() {
                 .document(uid)
                 .update("setupCompleted", true)
                 .addOnSuccessListener {
-                    startActivity(Intent(this, Settings::class.java))
+                    startActivity(Intent(this, MainActivity::class.java))
                     finish()
                 }
         }
@@ -149,7 +149,7 @@ class UserSetupProfile : AppCompatActivity() {
                 )
             )
             .addOnSuccessListener {
-                startActivity(Intent(this, Settings::class.java))
+                startActivity(Intent(this, MainActivity::class.java))
                 finish()
             }
 

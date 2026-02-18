@@ -44,20 +44,15 @@ class MainActivity : AppCompatActivity() {
         auth = FirebaseAuth.getInstance()
         db = FirebaseFirestore.getInstance()
 
-        // กำหนดรายการปุ่มทั้งหมดเพื่อใช้จัดการสีไฮไลต์
+        // รวม Card ทั้งหมดไว้ใน List เพื่อให้ง่ายต่อการจัดการสี
         cardButtons = listOf(
-            findViewById(R.id.cardCoffee),
-            findViewById(R.id.cardTea),
-            findViewById(R.id.cardSmall),
-            findViewById(R.id.cardRegular),
-            findViewById(R.id.cardLarge),
-            findViewById(R.id.cardCustom)
+            findViewById(R.id.cardCoffee), findViewById(R.id.cardTea),
+            findViewById(R.id.cardSmall), findViewById(R.id.cardRegular),
+            findViewById(R.id.cardLarge), findViewById(R.id.cardCustom)
         )
 
-        // Setup bottom navigation
         val bottomNavView = findViewById<View>(R.id.layout_bottom_nav)
-        val bottomNavManager = BottomNavManager(this, bottomNavView)
-        bottomNavManager.setupBottomNavigation()
+        BottomNavManager(this, bottomNavView).setupBottomNavigation()
 
         loadUserProfile()
         loadTodayIntake()
@@ -76,139 +71,155 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // ฟังก์ชันจัดการสีไฮไลต์ปุ่ม (เปลี่ยนเป็นสีฟ้า #AED6F1 เมื่อเลือก)
-    private fun highlightCard(selectedCard: CardView) {
-        cardButtons.forEach { card ->
-            if (card == selectedCard) {
-                card.setCardBackgroundColor(Color.parseColor("#AED6F1"))
+    // ฟังก์ชันจัดการสีของ Card (รับค่าเป็น null ได้เพื่อรีเซ็ตสีทั้งหมด)
+    private fun highlightCard(selectedCard: CardView?) {
+        cardButtons.forEach { it.setCardBackgroundColor(if (it == selectedCard) Color.parseColor("#AED6F1") else Color.WHITE) }
+    }
+
+    private fun confirmIntake(card: CardView, type: String, volume: Int) {
+        highlightCard(card)
+        val pDialog = SweetAlertDialog(this, SweetAlertDialog.WARNING_TYPE)
+        pDialog.titleText = "ยืนยันการดื่มน้ำ?"
+        pDialog.contentText = "คุณดื่ม $type ($volume ml) ใช่ไหม?"
+        pDialog.confirmText = "ใช่"
+        pDialog.cancelText = "ไม่ใช่"
+        pDialog.showCancelButton(true)
+
+        pDialog.setConfirmClickListener { sDialog ->
+            logIntake(type, volume)
+
+            // แก้บั๊ก: เมื่อกดบันทึกสำเร็จ ต้องปิดหน้าต่างและรีเซ็ตสี Card
+            sDialog.setTitleText("สำเร็จ!")
+                .setContentText("บันทึกเรียบร้อยแล้ว")
+                .setConfirmText("ตกลง")
+                .showCancelButton(false)
+                .setConfirmClickListener {
+                    it.dismissWithAnimation()
+                    highlightCard(null) // รีเซ็ตสี Card เป็นสีขาว
+                }
+                .changeAlertType(SweetAlertDialog.SUCCESS_TYPE)
+
+            sDialog.getButton(SweetAlertDialog.BUTTON_CONFIRM).setBackgroundResource(R.drawable.btn_round_green)
+        }
+
+        pDialog.setCancelClickListener {
+            it.cancel()
+            highlightCard(null) // รีเซ็ตสี Card เป็นสีขาวถ้ากดยกเลิก
+        }
+
+        pDialog.show()
+        pDialog.getButton(SweetAlertDialog.BUTTON_CONFIRM).setBackgroundResource(R.drawable.btn_round_green)
+        pDialog.getButton(SweetAlertDialog.BUTTON_CANCEL).setBackgroundResource(R.drawable.btn_round_red)
+    }
+
+    private fun logIntake(type: String, volume: Int) {
+        val user = auth.currentUser ?: run {
+            Log.e("SipSipError", "User is not logged in!")
+            return
+        }
+
+        val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+        val earnedBuckets = (volume / 200).toLong()
+
+        // 1. บันทึกประวัติการดื่ม (Consumptions)
+        val entry = hashMapOf(
+            "entry_id" to UUID.randomUUID().toString(),
+            "type" to type,
+            "volume_ml" to volume,
+            "timestamp" to SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault()).format(Date()),
+            "user_id" to user.uid
+        )
+
+        db.collection("consumptions").document("${user.uid}_$today").get()
+            .addOnSuccessListener { doc ->
+                if (doc.exists()) {
+                    doc.reference.update("entries", FieldValue.arrayUnion(entry), "total_intake_ml", FieldValue.increment(volume.toLong()))
+                } else {
+                    doc.reference.set(mapOf("log_id" to "${user.uid}_$today", "user_id" to user.uid, "date_string" to today, "total_intake_ml" to volume, "goal_ml" to 2000, "entries" to listOf(entry)))
+                }
+            }.addOnFailureListener { e -> Log.e("SipSipError", "Consumptions fail: ${e.message}") }
+
+        // 2. จัดการข้อมูลต้นไม้ (Plants) - ใช้ UID เป็นชื่อ Document
+        val plantRef = db.collection("plants").document(user.uid)
+
+        plantRef.get().addOnSuccessListener { document ->
+            if (document.exists()) {
+                // กรณีมีเอกสารแล้ว: อัปเดตฝักบัว
+                plantRef.update(
+                    "watering_cans_count", FieldValue.increment(earnedBuckets),
+                    "last_updated", com.google.firebase.Timestamp.now()
+                ).addOnSuccessListener {
+                    Log.d("SipSipSuccess", "Update plant successful: +$earnedBuckets cans")
+                }.addOnFailureListener { e ->
+                    Log.e("SipSipError", "Update plant fail: ${e.message}")
+                }
             } else {
-                card.setCardBackgroundColor(Color.WHITE)
+                // กรณี User ใหม่: สร้างเอกสารต้นไม้
+                val newPlant = hashMapOf(
+                    "user_id" to user.uid,
+                    "growth_stage" to 1,
+                    "watering_cans_count" to earnedBuckets,
+                    "current_water_level" to 0,
+                    "last_updated" to com.google.firebase.Timestamp.now()
+                )
+                plantRef.set(newPlant).addOnSuccessListener {
+                    Log.d("SipSipSuccess", "Create new plant successful for UID: ${user.uid}")
+                }.addOnFailureListener { e ->
+                    Log.e("SipSipError", "Create plant fail: ${e.message}")
+                }
             }
+        }.addOnFailureListener { e ->
+            Log.e("SipSipError", "Get plant document fail: ${e.message}")
         }
     }
 
-    // ฟังก์ชันเด้งถามยืนยันด้วย SweetAlert
-    private fun confirmIntake(card: CardView, type: String, volume: Int) {
-        highlightCard(card)
-
-        SweetAlertDialog(this, SweetAlertDialog.WARNING_TYPE)
-            .setTitleText("ยืนยันการบันทึก?")
-            .setContentText("คุณดื่ม $type ปริมาณ $volume ml ใช่หรือไม่?")
-            .setConfirmText("ตกลง")
-            .setCancelText("ยกเลิก")
-            .showCancelButton(true)
-            .setConfirmClickListener { sDialog ->
-                // เมื่อผู้ใช้กด OK
-                logIntake(type, volume)
-
-                // เปลี่ยน Alert เป็นความสำเร็จ
-                sDialog.setTitleText("สำเร็จ!")
-                    .setContentText("บันทึกการดื่มน้ำแล้ว")
-                    .setConfirmText("ตกลง")
-                    .showCancelButton(false)
-                    .setConfirmClickListener(null) // ปิด Dialog เมื่อกดตกลง
-                    .changeAlertType(SweetAlertDialog.SUCCESS_TYPE)
-            }
-            .setCancelClickListener { sDialog ->
-                // เมื่อกดยกเลิก
-                sDialog.cancel()
-                card.setCardBackgroundColor(Color.WHITE) // คืนสีเดิม
-            }
-            .show()
+    private fun isYesterday(dateStr: String): Boolean {
+        if (dateStr.isEmpty()) return false
+        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        val cal = Calendar.getInstance()
+        cal.add(Calendar.DATE, -1)
+        return sdf.format(cal.time) == dateStr
     }
 
     private fun showCustomIntakeDialog() {
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_custom_intake, null)
         val slider = dialogView.findViewById<Slider>(R.id.sliderCustomVolume)
         val tvSliderValue = dialogView.findViewById<TextView>(R.id.tvSliderValue)
-
-        slider.addOnChangeListener { _, value, _ ->
-            tvSliderValue.text = "${value.toInt()} ml"
-        }
+        slider.addOnChangeListener { _, value, _ -> tvSliderValue.text = "${value.toInt()} ml" }
 
         AlertDialog.Builder(this)
             .setView(dialogView)
-            .setPositiveButton("บันทึก") { dialog, _ ->
+            .setPositiveButton("บันทึก") { _, _ ->
                 val volume = slider.value.toInt()
-                if (volume > 0) {
-                    logIntake("Custom", volume)
-                    // แสดงความสำเร็จแบบสั้นหลังบันทึก Custom
-                    SweetAlertDialog(this, SweetAlertDialog.SUCCESS_TYPE)
-                        .setTitleText("สำเร็จ!")
-                        .setContentText("บันทึก $volume ml เรียบร้อย")
-                        .show()
-                } else {
-                    Toast.makeText(this, "กรุณาระบุปริมาณที่มากกว่า 0", Toast.LENGTH_SHORT).show()
-                }
-                dialog.dismiss()
+                if (volume > 0) logIntake("Custom", volume)
+                highlightCard(null) // รีเซ็ตสีหลังบันทึก Custom
             }
-            .setNegativeButton("ยกเลิก") { dialog, _ ->
-                findViewById<CardView>(R.id.cardCustom).setCardBackgroundColor(Color.WHITE)
-                dialog.cancel()
+            .setNegativeButton("ยกเลิก") { _, _ ->
+                highlightCard(null)
             }
-            .create()
+            .setOnCancelListener { highlightCard(null) }
             .show()
-    }
-
-    private fun logIntake(type: String, volume: Int) {
-        val user = auth.currentUser ?: return
-        val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-        val logDocId = "${user.uid}_$today"
-        val logDocRef = db.collection("consumptions").document(logDocId)
-
-        val entry = hashMapOf(
-            "entry_id" to UUID.randomUUID().toString(),
-            "type" to type,
-            "volume_ml" to volume,
-            "timestamp" to SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault()).format(Date()),
-            "user_id" to user.uid // เพิ่มเพื่อให้ Query ได้ง่ายขึ้น
-        )
-
-        logDocRef.get().addOnSuccessListener { document ->
-            if (document.exists()) {
-                logDocRef.update(
-                    "entries", FieldValue.arrayUnion(entry),
-                    "total_intake_ml", FieldValue.increment(volume.toLong())
-                )
-            } else {
-                val data = hashMapOf(
-                    "log_id" to logDocRef.id,
-                    "user_id" to user.uid,
-                    "date_string" to today,
-                    "total_intake_ml" to volume,
-                    "goal_ml" to 2000,
-                    "entries" to listOf(entry)
-                )
-                logDocRef.set(data)
-            }
-            loadTodayIntake() // อัพเดต UI หน้าหลัก
-        }
     }
 
     private fun loadTodayIntake() {
         val user = auth.currentUser ?: return
         val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-        val logDocId = "${user.uid}_$today"
-        val logDocRef = db.collection("consumptions").document(logDocId)
+        val layoutRecentEntries = findViewById<LinearLayout>(R.id.layoutRecentEntries)
 
-        // ใช้ addSnapshotListener เพื่อความเรียลไทม์
-        logDocRef.addSnapshotListener { document, e ->
-            if (e != null) return@addSnapshotListener
-
+        db.collection("consumptions").document("${user.uid}_$today").addSnapshotListener { document, _ ->
             if (document != null && document.exists()) {
                 val totalIntake = document.getLong("total_intake_ml") ?: 0
                 val goal = document.getLong("goal_ml") ?: 2000
                 findViewById<TextView>(R.id.tvCurrentAmount).text = totalIntake.toString()
                 findViewById<TextView>(R.id.tvGoal).text = " / $goal ml"
 
-                val entries = document.get("entries") as? List<HashMap<String, Any>>
-                val layoutRecentEntries = findViewById<LinearLayout>(R.id.layoutRecentEntries)
+                // --- ส่วนแสดงประวัติประวัติ 5 รายการล่าสุด ---
                 layoutRecentEntries.removeAllViews()
-
-                entries?.sortedByDescending { it["timestamp"] as String }?.take(5)?.forEach { entry ->
-                    val type = entry["type"] as String
-                    val volume = entry["volume_ml"] as Long
-                    val timestamp = entry["timestamp"] as String
+                val entries = document.get("entries") as? List<Map<String, Any>>
+                entries?.sortedByDescending { it["timestamp"] as? String }?.take(5)?.forEach { entry ->
+                    val type = entry["type"] as? String ?: "Water"
+                    val volume = entry["volume_ml"] ?: 0
+                    val timestamp = entry["timestamp"] as? String ?: ""
 
                     val entryView = LayoutInflater.from(this).inflate(R.layout.view_recent_entry, layoutRecentEntries, false)
                     entryView.findViewById<TextView>(R.id.tvEntryType).text = type
@@ -220,7 +231,6 @@ class MainActivity : AppCompatActivity() {
                     } catch (e: Exception) {
                         entryView.findViewById<TextView>(R.id.tvEntryTime).text = "--:--"
                     }
-
                     layoutRecentEntries.addView(entryView)
                 }
             }
@@ -229,15 +239,14 @@ class MainActivity : AppCompatActivity() {
 
     private fun loadUserProfile() {
         val user = auth.currentUser ?: return
-        db.collection("users").document(user.uid).get()
-            .addOnSuccessListener { document ->
-                if (document != null && document.exists()) {
-                    findViewById<TextView>(R.id.tvUsername).text = document.getString("name") ?: "User"
-                    val avatarUrl = document.getString("avatarUrl")
-                    if (!avatarUrl.isNullOrEmpty()) {
-                        Glide.with(this).load(avatarUrl).into(findViewById(R.id.imgAvatar))
-                    }
+        db.collection("users").document(user.uid).get().addOnSuccessListener { document ->
+            if (document.exists()) {
+                findViewById<TextView>(R.id.tvUsername).text = document.getString("name") ?: "User"
+                val avatarUrl = document.getString("avatarUrl")
+                if (!avatarUrl.isNullOrEmpty()) {
+                    Glide.with(this).load(avatarUrl).circleCrop().into(findViewById(R.id.imgAvatar))
                 }
             }
+        }
     }
 }

@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -24,16 +23,44 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"/>
 
-        <ImageView
-            android:id="@+id/imgTree"
-            android:layout_width="220dp"
-            android:layout_height="280dp"
-            android:src="@drawable/tree"
-            android:scaleType="fitCenter"
-            android:layout_marginTop="40dp"
-            app:layout_constraintTop_toBottomOf="@id/btnBack"
+        <LinearLayout
+            android:id="@+id/layoutStreak"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:padding="8dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <ImageView
+                android:id="@+id/imgFire"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/fire" />
+
+            <TextView
+                android:id="@+id/tvStreakCount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="#FF5722"
+                android:layout_marginStart="4dp"/>
+        </LinearLayout>
+
+        <com.airbnb.lottie.LottieAnimationView
+            android:id="@+id/lottieTree"
+            android:layout_width="250dp"
+            android:layout_height="300dp"
+            android:layout_marginTop="76dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.504"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"/>
+            app:layout_constraintTop_toBottomOf="@id/btnBack"
+            app:lottie_autoPlay="true"
+            app:lottie_loop="true" />
 
         <TextView
             android:id="@+id/tvLabel"
@@ -42,8 +69,8 @@
             android:text="จำนวนการรดน้ำ"
             android:textSize="16sp"
             android:textColor="#555555"
-            android:layout_marginTop="20dp"
-            app:layout_constraintTop_toBottomOf="@id/imgTree"
+            android:layout_marginTop="10dp"
+            app:layout_constraintTop_toBottomOf="@id/lottieTree"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"/>
 
@@ -53,7 +80,6 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="bottom"
-            android:layout_marginTop="4dp"
             app:layout_constraintTop_toBottomOf="@id/tvLabel"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent">
@@ -62,7 +88,7 @@
                 android:id="@+id/tvCount"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="15"
+                android:text="0"
                 android:textSize="48sp"
                 android:fontFamily="sans-serif-medium"
                 android:textColor="#C9A44C"/>
@@ -70,7 +96,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text=" ฝักบัว"
+                android:text=" ครั้ง"
                 android:textSize="18sp"
                 android:textStyle="bold"
                 android:textColor="#000000"
@@ -78,31 +104,19 @@
                 android:layout_marginBottom="8dp"/>
         </LinearLayout>
 
-        <View
-            android:id="@+id/blueLine"
-            android:layout_width="100dp"
-            android:layout_height="3dp"
-            android:background="#80DEEA"
-            android:layout_marginTop="25dp"
-            app:layout_constraintTop_toBottomOf="@id/layoutCount"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"/>
-
         <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardWaterAction"
             android:layout_width="120dp"
             android:layout_height="56dp"
             app:cardBackgroundColor="#FFFFFF"
             app:cardCornerRadius="16dp"
             app:cardElevation="8dp"
-            app:cardMaxElevation="10dp"
-            app:cardPreventCornerOverlap="false"
-            app:layout_constraintTop_toBottomOf="@id/blueLine"
+            app:layout_constraintTop_toBottomOf="@id/layoutCount"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            android:layout_marginTop="5dp"
+            android:layout_marginTop="20dp"
             android:clickable="true"
-            android:focusable="true"
-            android:checkable="true">
+            android:focusable="true">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -114,7 +128,7 @@
                     android:id="@+id/tvWaterAmount"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="3"
+                    android:text="0"
                     android:textSize="22sp"
                     android:textStyle="bold"
                     android:textColor="#555555"/>
@@ -126,7 +140,6 @@
                     android:src="@drawable/ic_watering"
                     app:tint="#00BCD4"/>
             </LinearLayout>
-
         </com.google.android.material.card.MaterialCardView>
 
     </androidx.constraintlayout.widget.ConstraintLayout>

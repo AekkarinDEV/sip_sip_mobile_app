@@ -37,6 +37,13 @@ android {
     buildFeatures {
         viewBinding = true // เปิดใช้งาน ViewBinding
     }
+    sourceSets {
+        getByName("main") {
+            assets {
+                srcDirs("src/main/assets")
+            }
+        }
+    }
 }
 
 dependencies {
@@ -49,6 +56,7 @@ dependencies {
     // UI & Material
     implementation("com.google.android.material:material:1.12.0")
     implementation("androidx.core:core-splashscreen:1.0.1")
+    implementation("com.airbnb.android:lottie:6.7.1")
 
     // กราฟ
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")

@@ -7,6 +7,9 @@
         <!-- Global font -->
         <item name="android:fontFamily">@font/prompt_semibold</item>
         <item name="android:windowBackground">@android:color/white</item>
+        <item name="colorPrimary">#5DADE2</item>
+        <item name="colorSecondary">#AED6F1</item>
+        <item name="colorTertiary">#A5DC86</item>
 
     </style>
 
