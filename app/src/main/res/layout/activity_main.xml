@@ -161,7 +161,7 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_columnWeight="1"
-                            app:cardBackgroundColor="#AED6F1"
+                            app:cardBackgroundColor="#FFFFFF"
                             app:cardCornerRadius="16dp"
                             android:clickable="true"
                             android:focusable="true"

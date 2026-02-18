@@ -52,6 +52,7 @@ dependencies {
 
     // กราฟ
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
+    implementation("com.github.f0ris.sweetalert:library:1.6.2")
 
     // Firebase
     implementation(platform("com.google.firebase:firebase-bom:33.4.0"))

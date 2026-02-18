@@ -55,7 +55,7 @@ class SplashActivity : AppCompatActivity() {
                 val completed = doc.getBoolean("setupCompleted") ?: false
 
                 val intent = if (completed) {
-                    Intent(this, Settings::class.java)
+                    Intent(this, MainActivity::class.java)
                 } else {
                     Intent(this, UserSetup::class.java)
                 }
