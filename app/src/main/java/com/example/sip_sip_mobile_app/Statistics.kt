@@ -232,39 +232,37 @@ class Statistics : AppCompatActivity() {
     // -------------------------
 
     private fun loadOverallSummary() {
-
         val user = auth.currentUser ?: return
 
+        // เปลี่ยนจาก .get().addOnSuccessListener เป็น .addSnapshotListener
         db.collection("consumptions")
-            .orderBy(com.google.firebase.firestore.FieldPath.documentId())
-            .startAt(user.uid + "_")
-            .endAt(user.uid + "_\uf8ff")
-            .get()
-            .addOnSuccessListener { documents ->
-
-                var totalAll = 0f
-                var days = 0
-
-                for (doc in documents) {
-
-                    val intake = doc.getLong("total_intake_ml")?.toFloat() ?: 0f
-
-                    if (intake > 0) {
-                        totalAll += intake
-                        days++
-                    }
+            .whereEqualTo("user_id", user.uid)
+            .addSnapshotListener { documents, e ->
+                if (e != null) {
+                    Log.e("Statistics", "Listen failed.", e)
+                    return@addSnapshotListener
                 }
 
-                val avg = if (days > 0) totalAll / days else 0f
+                if (documents != null) {
+                    var totalAll = 0f
+                    var days = 0
 
-                tvOverallAverage.text =
-                    String.format("%.2f L", avg / 1000f)
+                    for (doc in documents) {
+                        val intake = doc.getLong("total_intake_ml")?.toFloat() ?: 0f
+                        if (intake > 0) {
+                            totalAll += intake
+                            days++
+                        }
+                    }
 
-                tvOverallTotal.text =
-                    String.format("%.2f L", totalAll / 1000f)
-            }
-            .addOnFailureListener {
-                Log.e("Statistics", "Error loading overall summary", it)
+                    val avg = if (days > 0) totalAll / days else 0f
+
+                    // อัพเดต UI ทันทีเมื่อข้อมูลใน Firebase เปลี่ยน
+                    tvOverallAverage.text = String.format("%.2f L", avg / 1000f)
+                    tvOverallTotal.text = String.format("%.2f L", totalAll / 1000f)
+
+                    Log.d("Statistics", "Real-time Update: Total=$totalAll")
+                }
             }
     }
 
