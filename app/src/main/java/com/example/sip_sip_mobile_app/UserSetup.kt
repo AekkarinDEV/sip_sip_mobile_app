@@ -17,6 +17,7 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.switchmaterial.SwitchMaterial
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import java.text.SimpleDateFormat
 import java.util.*
 
 class UserSetup : AppCompatActivity() {
@@ -74,37 +75,50 @@ class UserSetup : AppCompatActivity() {
         btnBack.setOnClickListener { finish() }
 
         btnConfirm.setOnClickListener {
-            val gender = etGender.text.toString()
-            val weight = etWeight.text.toString()
-            val activity = etActivity.text.toString()
+            val genderStr = etGender.text.toString()
+            val weightStr = etWeight.text.toString()
+            val activityStr = etActivity.text.toString()
             val startTime = etStartTime.text.toString()
             val endTime = etEndTime.text.toString()
             val notify = switchNotify.isChecked
 
-            if (gender.isEmpty() || weight.isEmpty() || activity.isEmpty() || startTime.isEmpty() || endTime.isEmpty()) {
+            if (genderStr.isEmpty() || weightStr.isEmpty() || activityStr.isEmpty() || startTime.isEmpty() || endTime.isEmpty()) {
                 Toast.makeText(this, "กรุณากรอกข้อมูลให้ครบ", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
+            val weightKg = weightStr.toDouble()
+            val gender = mapGender(genderStr)
+            val activityLevel = mapActivityLevel(activityStr)
+            val goalMl = calculateDailyWater(weightKg, gender, activityLevel)
 
             val profileData = hashMapOf(
-                "gender" to gender,
-                "weight" to weight.toInt(),
-                "activity" to activity,
+                "gender" to genderStr,
+                "weight" to weightKg,
+                "activity" to activityStr,
                 "wakeTime" to startTime,
                 "sleepTime" to endTime,
                 "notify" to notify,
                 "setupCompleted" to false
             )
 
-            db.collection("users")
-                .document(uid)
-                .update(profileData as Map<String, Any>)
+            db.collection("users").document(uid).update(profileData as Map<String, Any>)
                 .addOnSuccessListener {
+                    // Create initial consumption for today
+                    val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+                    val consumptionData = hashMapOf(
+                        "log_id" to "${uid}_$today",
+                        "user_id" to uid,
+                        "date_string" to today,
+                        "total_intake_ml" to 0,
+                        "goal_ml" to goalMl,
+                        "entries" to emptyList<Map<String, Any>>(),
+                    )
+                    db.collection("consumptions").document("${uid}_$today").set(consumptionData)
+
                     startActivity(Intent(this, UserSetupProfile::class.java))
                     finish()
                 }
-
                 .addOnFailureListener {
                     Toast.makeText(this, it.message, Toast.LENGTH_SHORT).show()
                 }

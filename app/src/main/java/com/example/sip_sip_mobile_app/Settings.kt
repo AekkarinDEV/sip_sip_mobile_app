@@ -20,6 +20,7 @@ import com.google.android.material.switchmaterial.SwitchMaterial
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
+import java.text.SimpleDateFormat
 import java.util.*
 
 class Settings : AppCompatActivity() {
@@ -215,15 +216,28 @@ class Settings : AppCompatActivity() {
     private fun saveProfile() {
         val uid = auth.currentUser?.uid ?: return
 
+        val genderStr = etGender.text.toString()
+        val weightStr = etWeight.text.toString()
+        val activityStr = etActivityEdit.text.toString()
+
+        val weightKg = weightStr.toDouble()
+        val gender = mapGender(genderStr)
+        val activityLevel = mapActivityLevel(activityStr)
+        val goalMl = calculateDailyWater(weightKg, gender, activityLevel)
+
         val profileData: HashMap<String, Any> = hashMapOf(
             "name" to etNameEdit.text.toString(),
-            "gender" to etGender.text.toString(),
-            "activity" to etActivityEdit.text.toString(),
-            "weight" to etWeight.text.toString().toInt(),
+            "gender" to genderStr,
+            "activity" to activityStr,
+            "weight" to weightKg,
             "wakeTime" to etStartTime.text.toString(),
             "sleepTime" to etEndTime.text.toString(),
             "notify" to switchNotify.isChecked
         )
+
+        // Update consumption goal
+        val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+        db.collection("consumptions").document("${uid}_$today").update("goal_ml", goalMl)
 
         if (imageUri != null) {
             uploadAvatar(uid, profileData)
