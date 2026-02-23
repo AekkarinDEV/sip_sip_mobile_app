@@ -93,19 +93,14 @@ class UserSetup : AppCompatActivity() {
                 "activity" to activity,
                 "wakeTime" to startTime,
                 "sleepTime" to endTime,
-                "notify" to notify
+                "notify" to notify,
+                "setupCompleted" to false
             )
 
             db.collection("users")
                 .document(uid)
-                .collection("profile")
-                .document("basic")
-                .set(profileData)
+                .update(profileData as Map<String, Any>)
                 .addOnSuccessListener {
-                    db.collection("users")
-                        .document(uid)
-                        .update("setupCompleted", false)
-
                     startActivity(Intent(this, UserSetupProfile::class.java))
                     finish()
                 }

@@ -139,19 +139,20 @@
                         android:textSize="16sp"/>
 
                     <!-- Gender -->
-                    <EditText
-                        android:id="@+id/etGender"
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilGender"
                         android:layout_width="match_parent"
-                        android:layout_height="48dp"
+                        android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
-                        android:background="@drawable/edittext_bg"
-                        android:hint="เพศ"
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
 
-                        android:focusable="false"
-                        android:clickable="false"
-                        android:cursorVisible="false"
-                        android:inputType="none"/>
-
+                        <AutoCompleteTextView
+                            android:id="@+id/etGender"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="เพศ"
+                            android:inputType="none"/>
+                    </com.google.android.material.textfield.TextInputLayout>
 
 
                     <!-- Weight -->

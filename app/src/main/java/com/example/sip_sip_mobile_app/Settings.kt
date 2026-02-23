@@ -36,7 +36,7 @@ class Settings : AppCompatActivity() {
     private lateinit var tvEmail: TextView
 
     // ===== form =====
-    private lateinit var etGender: EditText
+    private lateinit var etGender: AutoCompleteTextView
     private lateinit var etWeight: EditText
     private lateinit var etStartTime: EditText
     private lateinit var etEndTime: EditText
@@ -61,6 +61,7 @@ class Settings : AppCompatActivity() {
     private var oldWeight = ""
     private var oldStart = ""
     private var oldEnd = ""
+    private var oldGender = ""
     private var oldNotify = false
 
     companion object {
@@ -209,13 +210,14 @@ class Settings : AppCompatActivity() {
         }
     }
 
-    // ================= Profile & Image Logic (คงเดิมเพื่อให้ใช้งานได้) =================
+    // ================= Profile & Image Logic (Refactored) =================
 
     private fun saveProfile() {
         val uid = auth.currentUser?.uid ?: return
-        db.collection("users").document(uid).update(mapOf("name" to etNameEdit.text.toString()))
 
         val profileData: HashMap<String, Any> = hashMapOf(
+            "name" to etNameEdit.text.toString(),
+            "gender" to etGender.text.toString(),
             "activity" to etActivityEdit.text.toString(),
             "weight" to etWeight.text.toString().toInt(),
             "wakeTime" to etStartTime.text.toString(),
@@ -223,7 +225,6 @@ class Settings : AppCompatActivity() {
             "notify" to switchNotify.isChecked
         )
 
-        // ตรวจสอบว่ามีการเลือกรูปใหม่หรือไม่
         if (imageUri != null) {
             uploadAvatar(uid, profileData)
         } else {
@@ -236,15 +237,15 @@ class Settings : AppCompatActivity() {
         ref.putFile(imageUri!!)
             .addOnSuccessListener {
                 ref.downloadUrl.addOnSuccessListener { uri ->
-                    db.collection("users").document(uid).update("avatarUrl", uri.toString())
+                    profileData["avatarUrl"] = uri.toString()
                     saveProfileData(uid, profileData)
                 }
             }
     }
 
-    private fun saveProfileData(uid: String, profileData: HashMap<String, Any>) {
-        db.collection("users").document(uid).collection("profile").document("basic")
-            .set(profileData)
+    private fun saveProfileData(uid: String, profileData: Map<String, Any>) {
+        db.collection("users").document(uid)
+            .update(profileData)
             .addOnSuccessListener {
                 imageUri = null
                 setEditable(false)
@@ -259,7 +260,6 @@ class Settings : AppCompatActivity() {
         }
     }
 
-    // ... (ฟังก์ชัน loadProfile, cache, restore, setup อื่นๆ เหมือนเดิมทุกประการ)
     private fun setEditable(enable: Boolean) {
         if (enable) {
             etActivityEdit.setText(etActivityView.text.toString(), false)
@@ -277,6 +277,7 @@ class Settings : AppCompatActivity() {
             etNameEdit.visibility = View.GONE
         }
         imgAvatar.isEnabled = enable
+        etGender.isEnabled = enable
         etWeight.isEnabled = enable
         etStartTime.isEnabled = enable
         etEndTime.isEnabled = enable
@@ -291,23 +292,27 @@ class Settings : AppCompatActivity() {
         val user = auth.currentUser ?: return
         tvEmail.text = user.email ?: ""
         db.collection("users").document(user.uid).get().addOnSuccessListener { doc ->
-            val name = doc.getString("name") ?: doc.getString("username") ?: ""
-            tvNameView.text = name
-            etNameEdit.setText(name)
-            val avatarUrl = doc.getString("avatarUrl")
-            if (!avatarUrl.isNullOrEmpty()) {
-                Glide.with(this).load(avatarUrl).into(imgAvatar)
+            if (doc != null && doc.exists()) {
+                val name = doc.getString("name") ?: doc.getString("username") ?: ""
+                tvNameView.text = name
+                etNameEdit.setText(name)
+                
+                val avatarUrl = doc.getString("avatarUrl")
+                if (!avatarUrl.isNullOrEmpty()) {
+                    Glide.with(this).load(avatarUrl).into(imgAvatar)
+                }
+
+                val gender = doc.getString("gender") ?: ""
+                etGender.setText(gender, false)
+
+                val activity = doc.getString("activity") ?: ""
+                etActivityView.setText(activity)
+                etActivityEdit.setText(activity, false)
+                etWeight.setText(doc.getLong("weight")?.toString() ?: "")
+                etStartTime.setText(doc.getString("wakeTime") ?: "")
+                etEndTime.setText(doc.getString("sleepTime") ?: "")
+                switchNotify.isChecked = doc.getBoolean("notify") ?: false
             }
-        }
-        db.collection("users").document(user.uid).collection("profile").document("basic").get().addOnSuccessListener { doc ->
-            val activity = doc.getString("activity") ?: ""
-            etGender.setText(doc.getString("gender") ?: "")
-            etActivityView.setText(activity)
-            etActivityEdit.setText(activity, false)
-            etWeight.setText(doc.getLong("weight")?.toString() ?: "")
-            etStartTime.setText(doc.getString("wakeTime") ?: "")
-            etEndTime.setText(doc.getString("sleepTime") ?: "")
-            switchNotify.isChecked = doc.getBoolean("notify") ?: false
         }
     }
 
@@ -317,6 +322,7 @@ class Settings : AppCompatActivity() {
         oldWeight = etWeight.text.toString()
         oldStart = etStartTime.text.toString()
         oldEnd = etEndTime.text.toString()
+        oldGender = etGender.text.toString()
         oldNotify = switchNotify.isChecked
     }
 
@@ -328,12 +334,17 @@ class Settings : AppCompatActivity() {
         etWeight.setText(oldWeight)
         etStartTime.setText(oldStart)
         etEndTime.setText(oldEnd)
+        etGender.setText(oldGender)
         switchNotify.isChecked = oldNotify
     }
 
     private fun setupDropdowns() {
-        val adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, listOf("ไม่ออกกำลังกาย", "เล็กน้อย", "ปานกลาง", "หนัก"))
-        etActivityEdit.setAdapter(adapter)
+        val genderAdapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, listOf("ชาย", "หญิง", "อื่นๆ"))
+        etGender.setAdapter(genderAdapter)
+        etGender.setOnClickListener { etGender.showDropDown() }
+
+        val activityAdapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, listOf("ไม่ออกกำลังกาย", "เล็กน้อย", "ปานกลาง", "หนัก"))
+        etActivityEdit.setAdapter(activityAdapter)
         etActivityEdit.setOnClickListener { etActivityEdit.showDropDown() }
     }
 
