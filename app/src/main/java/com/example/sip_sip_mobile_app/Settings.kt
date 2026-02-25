@@ -17,6 +17,7 @@ import com.bumptech.glide.Glide
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.imageview.ShapeableImageView
 import com.google.android.material.switchmaterial.SwitchMaterial
+import com.google.android.material.textfield.TextInputLayout
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
@@ -37,7 +38,9 @@ class Settings : AppCompatActivity() {
     private lateinit var tvEmail: TextView
 
     // ===== form =====
-    private lateinit var etGender: AutoCompleteTextView
+    private lateinit var etGenderView: EditText
+    private lateinit var tilGenderEdit: TextInputLayout
+    private lateinit var etGenderEdit: AutoCompleteTextView
     private lateinit var etWeight: EditText
     private lateinit var etStartTime: EditText
     private lateinit var etEndTime: EditText
@@ -131,7 +134,9 @@ class Settings : AppCompatActivity() {
         etNameEdit = findViewById(R.id.etNameEdit)
         tvEmail = findViewById(R.id.tvEmail)
         btnLogout = findViewById(R.id.btnLogout)
-        etGender = findViewById(R.id.etGender)
+        etGenderView = findViewById(R.id.etGenderView)
+        tilGenderEdit = findViewById(R.id.tilGenderEdit)
+        etGenderEdit = findViewById(R.id.etGenderEdit)
         etWeight = findViewById(R.id.etWeight)
         etStartTime = findViewById(R.id.etStartTime)
         etEndTime = findViewById(R.id.etEndTime)
@@ -216,7 +221,7 @@ class Settings : AppCompatActivity() {
     private fun saveProfile() {
         val uid = auth.currentUser?.uid ?: return
 
-        val genderStr = etGender.text.toString()
+        val genderStr = etGenderEdit.text.toString()
         val weightStr = etWeight.text.toString()
         val activityStr = etActivityEdit.text.toString()
 
@@ -279,6 +284,9 @@ class Settings : AppCompatActivity() {
             etActivityEdit.setText(etActivityView.text.toString(), false)
             etActivityView.visibility = View.GONE
             tilActivityEdit.visibility = View.VISIBLE
+            etGenderEdit.setText(etGenderView.text.toString(), false)
+            etGenderView.visibility = View.GONE
+            tilGenderEdit.visibility = View.VISIBLE
             etNameEdit.setText(tvNameView.text.toString())
             tvNameView.visibility = View.GONE
             etNameEdit.visibility = View.VISIBLE
@@ -286,12 +294,14 @@ class Settings : AppCompatActivity() {
             etActivityView.setText(etActivityEdit.text.toString())
             etActivityView.visibility = View.VISIBLE
             tilActivityEdit.visibility = View.GONE
+            etGenderView.setText(etGenderEdit.text.toString())
+            etGenderView.visibility = View.VISIBLE
+            tilGenderEdit.visibility = View.GONE
             tvNameView.text = etNameEdit.text.toString()
             tvNameView.visibility = View.VISIBLE
             etNameEdit.visibility = View.GONE
         }
         imgAvatar.isEnabled = enable
-        etGender.isEnabled = enable
         etWeight.isEnabled = enable
         etStartTime.isEnabled = enable
         etEndTime.isEnabled = enable
@@ -310,14 +320,15 @@ class Settings : AppCompatActivity() {
                 val name = doc.getString("name") ?: doc.getString("username") ?: ""
                 tvNameView.text = name
                 etNameEdit.setText(name)
-                
+
                 val avatarUrl = doc.getString("avatarUrl")
                 if (!avatarUrl.isNullOrEmpty()) {
                     Glide.with(this).load(avatarUrl).into(imgAvatar)
                 }
 
                 val gender = doc.getString("gender") ?: ""
-                etGender.setText(gender, false)
+                etGenderView.setText(gender)
+                etGenderEdit.setText(gender, false)
 
                 val activity = doc.getString("activity") ?: ""
                 etActivityView.setText(activity)
@@ -336,7 +347,7 @@ class Settings : AppCompatActivity() {
         oldWeight = etWeight.text.toString()
         oldStart = etStartTime.text.toString()
         oldEnd = etEndTime.text.toString()
-        oldGender = etGender.text.toString()
+        oldGender = etGenderView.text.toString()
         oldNotify = switchNotify.isChecked
     }
 
@@ -348,14 +359,15 @@ class Settings : AppCompatActivity() {
         etWeight.setText(oldWeight)
         etStartTime.setText(oldStart)
         etEndTime.setText(oldEnd)
-        etGender.setText(oldGender)
+        etGenderView.setText(oldGender)
+        etGenderEdit.setText(oldGender, false)
         switchNotify.isChecked = oldNotify
     }
 
     private fun setupDropdowns() {
         val genderAdapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, listOf("ชาย", "หญิง", "อื่นๆ"))
-        etGender.setAdapter(genderAdapter)
-        etGender.setOnClickListener { etGender.showDropDown() }
+        etGenderEdit.setAdapter(genderAdapter)
+        etGenderEdit.setOnClickListener { etGenderEdit.showDropDown() }
 
         val activityAdapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, listOf("ไม่ออกกำลังกาย", "เล็กน้อย", "ปานกลาง", "หนัก"))
         etActivityEdit.setAdapter(activityAdapter)
