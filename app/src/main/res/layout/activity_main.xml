@@ -65,14 +65,12 @@
                     </LinearLayout>
                 </androidx.cardview.widget.CardView>
 
-                <ImageView
-                    android:id="@+id/imgMainGlass"
-                    android:layout_width="120dp"
+                <com.example.sip_sip_mobile_app.WaterDropView
+                    android:id="@+id/waterDropView"
+                    android:layout_width="180dp"
                     android:layout_height="180dp"
                     android:layout_marginStart="32dp"
                     android:layout_marginTop="24dp"
-                    android:scaleType="fitCenter"
-                    android:src="@drawable/ic_glass"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@id/cardHeader" />
 
@@ -85,8 +83,8 @@
                     android:textColor="#757575"
                     android:textSize="16sp"
                     app:layout_constraintBottom_toTopOf="@+id/layoutProgressText"
-                    app:layout_constraintStart_toEndOf="@id/imgMainGlass"
-                    app:layout_constraintTop_toTopOf="@+id/imgMainGlass"
+                    app:layout_constraintStart_toEndOf="@id/waterDropView"
+                    app:layout_constraintTop_toTopOf="@id/waterDropView"
                     app:layout_constraintVertical_chainStyle="packed" />
 
                 <LinearLayout
@@ -97,9 +95,9 @@
                     android:layout_marginTop="4dp"
                     android:gravity="bottom"
                     android:orientation="horizontal"
-                    app:layout_constraintBottom_toBottomOf="@+id/imgMainGlass"
-                    app:layout_constraintStart_toEndOf="@+id/imgMainGlass"
-                    app:layout_constraintTop_toBottomOf="@+id/tvLabelStatus">
+                    app:layout_constraintBottom_toBottomOf="@id/waterDropView"
+                    app:layout_constraintStart_toEndOf="@id/waterDropView"
+                    app:layout_constraintTop_toBottomOf="@id/tvLabelStatus">
 
                     <TextView
                         android:id="@+id/tvCurrentAmount"

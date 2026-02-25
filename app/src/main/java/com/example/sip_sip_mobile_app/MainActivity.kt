@@ -6,11 +6,10 @@ import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
+import android.widget.Button
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
-import android.widget.Toast
-import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
@@ -30,10 +29,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var auth: FirebaseAuth
     private lateinit var db: FirebaseFirestore
     private lateinit var cardButtons: List<CardView>
+    private lateinit var waterDropView: WaterDropView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         setContentView(R.layout.activity_main)
 
         auth = FirebaseAuth.getInstance()
@@ -51,6 +50,8 @@ class MainActivity : AppCompatActivity() {
         }
 
         db = FirebaseFirestore.getInstance()
+
+        waterDropView = findViewById(R.id.waterDropView)
 
         cardButtons = listOf(
             findViewById(R.id.cardCoffee), findViewById(R.id.cardTea),
@@ -106,7 +107,7 @@ class MainActivity : AppCompatActivity() {
 
         pDialog.setCancelClickListener {
             it.cancel()
-            highlightCard(null) 
+            highlightCard(null)
         }
 
         pDialog.show()
@@ -206,6 +207,9 @@ class MainActivity : AppCompatActivity() {
                 findViewById<TextView>(R.id.tvCurrentAmount).text = totalIntake.toString()
                 findViewById<TextView>(R.id.tvGoal).text = " / $goal ml"
 
+                val percentage = ((totalIntake.toFloat() / goal.toFloat()) * 100).toInt()
+                waterDropView.setProgress(percentage)
+
                 layoutRecentEntries.removeAllViews()
                 val entries = document.get("entries") as? List<Map<String, Any>>
                 entries?.reversed()?.forEach { entry ->
@@ -242,14 +246,15 @@ class MainActivity : AppCompatActivity() {
                     }
 
                     val consumptionData = hashMapOf(
-                        "log_id" to "${user.uid}_$today",
                         "user_id" to user.uid,
-                        "date_string" to today,
+                        "date" to today,
                         "total_intake_ml" to 0,
                         "goal_ml" to goalMl,
-                        "entries" to emptyList<Map<String, Any>>()
+                        "entries" to listOf<Map<String, Any>>()
                     )
+
                     docRef.set(consumptionData)
+                        .addOnFailureListener { e -> Log.e("SipSipError", "Failed to create today's consumption document: ${e.message}") }
                 }
             }
         }
@@ -259,18 +264,49 @@ class MainActivity : AppCompatActivity() {
         val user = auth.currentUser ?: return
         db.collection("users").document(user.uid).get()
             .addOnSuccessListener { document ->
-                if (document.exists()) {
-                    findViewById<TextView>(R.id.tvUsername).text = document.getString("name") ?: "User"
-                    val avatarUrl = document.getString("avatarUrl")
-                    if (!avatarUrl.isNullOrEmpty()) {
-                        Glide.with(this).load(avatarUrl).circleCrop().into(findViewById(R.id.imgAvatar))
+                if (document != null && document.exists()) {
+                    val name = document.getString("name") ?: "User"
+                    val photoUrl = document.getString("photoUrl")
+                    findViewById<TextView>(R.id.tvUsername).text = name
+                    if (!photoUrl.isNullOrEmpty()) {
+                        Glide.with(this).load(photoUrl).circleCrop().into(findViewById(R.id.imgAvatar))
                     }
                 } else {
-                    Log.d("SipSipInfo", "User document does not exist.")
+                    Log.d("SipSip", "No such document")
                 }
             }
-            .addOnFailureListener { e ->
-                Log.e("SipSipError", "Error getting user document: ", e)
+            .addOnFailureListener { exception ->
+                Log.d("SipSip", "get failed with ", exception)
             }
     }
+
+    // Helper functions for calculating water intake - you might need to adjust these
+    private fun calculateDailyWater(weight: Double, gender: Gender, activityLevel: ActivityLevel): Int {
+        val baseIntake = weight * 30 // A common formula
+        val activityBonus = when (activityLevel) {
+            ActivityLevel.SEDENTARY -> 0
+            ActivityLevel.LIGHT -> 250
+            ActivityLevel.MODERATE -> 500
+            ActivityLevel.ACTIVE -> 750
+        }
+        val genderBonus = if (gender == Gender.MALE) 250 else 0
+        return (baseIntake + activityBonus + genderBonus).toInt()
+    }
+
+    private fun mapGender(genderStr: String): Gender = when(genderStr) {
+        "ชาย" -> Gender.MALE
+        "หญิง" -> Gender.FEMALE
+        else -> Gender.FEMALE
+    }
+
+    private fun mapActivityLevel(activityStr: String): ActivityLevel = when(activityStr) {
+        "ไม่ออกกำลังกาย" -> ActivityLevel.SEDENTARY
+        "ออกกำลังกายเบาๆ" -> ActivityLevel.LIGHT
+        "ออกกำลังกายปานกลาง" -> ActivityLevel.MODERATE
+        "ออกกำลังกายหนัก" -> ActivityLevel.ACTIVE
+        else -> ActivityLevel.SEDENTARY
+    }
+
+    enum class Gender { MALE, FEMALE }
+    enum class ActivityLevel { SEDENTARY, LIGHT, MODERATE, ACTIVE }
 }
