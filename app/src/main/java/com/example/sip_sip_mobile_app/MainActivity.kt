@@ -1,5 +1,6 @@
 package com.example.sip_sip_mobile_app
 
+import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import android.util.Log
@@ -35,13 +36,20 @@ class MainActivity : AppCompatActivity() {
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
 
+        auth = FirebaseAuth.getInstance()
+
+        if (auth.currentUser == null) {
+            startActivity(Intent(this, Login::class.java))
+            finish()
+            return
+        }
+
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
 
-        auth = FirebaseAuth.getInstance()
         db = FirebaseFirestore.getInstance()
 
         cardButtons = listOf(
@@ -115,11 +123,14 @@ class MainActivity : AppCompatActivity() {
         val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
         val earnedBuckets = (volume / 200).toLong()
 
+        val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault())
+        sdf.timeZone = TimeZone.getTimeZone("UTC")
+
         val entry = hashMapOf(
             "entry_id" to UUID.randomUUID().toString(),
             "type" to type,
             "volume_ml" to volume,
-            "timestamp" to SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault()).format(Date()),
+            "timestamp" to sdf.format(Date()),
             "user_id" to user.uid
         )
 
@@ -166,6 +177,17 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
+    private fun getIconForType(type: String): Int {
+        return when (type) {
+            "Coffee Cup" -> R.drawable.coffeecup
+            "Tea Cup" -> R.drawable.teacup
+            "Small Cup" -> R.drawable.smallcup
+            "Regular Glass" -> R.drawable.regularglass
+            "Large Glass" -> R.drawable.largeglass
+            else -> R.drawable.custom // Default icon
+        }
+    }
+
     private fun loadTodayIntake() {
         val user = auth.currentUser ?: return
         val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
@@ -186,7 +208,7 @@ class MainActivity : AppCompatActivity() {
 
                 layoutRecentEntries.removeAllViews()
                 val entries = document.get("entries") as? List<Map<String, Any>>
-                entries?.sortedByDescending { it["timestamp"] as? String }?.take(5)?.forEach { entry ->
+                entries?.reversed()?.forEach { entry ->
                     val type = entry["type"] as? String ?: "Water"
                     val volume = entry["volume_ml"] ?: 0
                     val timestamp = entry["timestamp"] as? String ?: ""
@@ -194,6 +216,7 @@ class MainActivity : AppCompatActivity() {
                     val entryView = LayoutInflater.from(this).inflate(R.layout.view_recent_entry, layoutRecentEntries, false)
                     entryView.findViewById<TextView>(R.id.tvEntryType).text = type
                     entryView.findViewById<TextView>(R.id.tvEntryVolume).text = "$volume ml"
+                    entryView.findViewById<ImageView>(R.id.imgEntryIcon).setImageResource(getIconForType(type))
 
                     try {
                         val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault())
@@ -234,14 +257,20 @@ class MainActivity : AppCompatActivity() {
 
     private fun loadUserProfile() {
         val user = auth.currentUser ?: return
-        db.collection("users").document(user.uid).get().addOnSuccessListener { document ->
-            if (document.exists()) {
-                findViewById<TextView>(R.id.tvUsername).text = document.getString("name") ?: "User"
-                val avatarUrl = document.getString("avatarUrl")
-                if (!avatarUrl.isNullOrEmpty()) {
-                    Glide.with(this).load(avatarUrl).circleCrop().into(findViewById(R.id.imgAvatar))
+        db.collection("users").document(user.uid).get()
+            .addOnSuccessListener { document ->
+                if (document.exists()) {
+                    findViewById<TextView>(R.id.tvUsername).text = document.getString("name") ?: "User"
+                    val avatarUrl = document.getString("avatarUrl")
+                    if (!avatarUrl.isNullOrEmpty()) {
+                        Glide.with(this).load(avatarUrl).circleCrop().into(findViewById(R.id.imgAvatar))
+                    }
+                } else {
+                    Log.d("SipSipInfo", "User document does not exist.")
                 }
             }
-        }
+            .addOnFailureListener { e ->
+                Log.e("SipSipError", "Error getting user document: ", e)
+            }
     }
 }
