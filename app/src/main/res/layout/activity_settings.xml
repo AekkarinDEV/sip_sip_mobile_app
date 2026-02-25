@@ -138,14 +138,24 @@
                         android:textStyle="bold"
                         android:textSize="16sp"/>
 
+                    <!-- Label: Gender -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="เพศ"
+                        android:textSize="12sp"
+                        android:textColor="#666666"
+                        android:layout_marginTop="12dp"/>
+
                     <!-- Gender: VIEW MODE -->
                     <EditText
                         android:id="@+id/etGenderView"
                         android:layout_width="match_parent"
                         android:layout_height="48dp"
-                        android:layout_marginTop="12dp"
+                        android:layout_marginTop="4dp"
                         android:background="@drawable/edittext_bg"
                         android:hint="เพศ"
+                        android:paddingHorizontal="12dp"
                         android:enabled="false"/>
 
                     <!-- Gender: EDIT MODE -->
@@ -153,7 +163,7 @@
                         android:id="@+id/tilGenderEdit"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
+                        android:layout_marginTop="4dp"
                         android:visibility="gone"
                         style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
 
@@ -161,29 +171,49 @@
                             android:id="@+id/etGenderEdit"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:hint="เพศ"
+                            android:hint="เลือกเพศ"
                             android:inputType="none"/>
                     </com.google.android.material.textfield.TextInputLayout>
 
+
+                    <!-- Label: Weight -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="น้ำหนัก (กก.)"
+                        android:textSize="12sp"
+                        android:textColor="#666666"
+                        android:layout_marginTop="12dp"/>
 
                     <!-- Weight -->
                     <EditText
                         android:id="@+id/etWeight"
                         android:layout_width="match_parent"
                         android:layout_height="48dp"
-                        android:layout_marginTop="12dp"
+                        android:layout_marginTop="4dp"
                         android:background="@drawable/edittext_bg"
-                        android:hint="น้ำหนัก (กก.)"
+                        android:hint="ตัวอย่าง: 65"
+                        android:paddingHorizontal="12dp"
                         android:inputType="number"/>
+
+                    <!-- Label: Activity -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="การออกกำลังกาย"
+                        android:textSize="12sp"
+                        android:textColor="#666666"
+                        android:layout_marginTop="12dp"/>
 
                     <!-- Activity : VIEW MODE -->
                     <EditText
                         android:id="@+id/etActivityView"
                         android:layout_width="match_parent"
                         android:layout_height="48dp"
-                        android:layout_marginTop="12dp"
+                        android:layout_marginTop="4dp"
                         android:background="@drawable/edittext_bg"
                         android:hint="กิจกรรม"
+                        android:paddingHorizontal="12dp"
                         android:enabled="false"/>
 
                     <!-- Activity : EDIT MODE -->
@@ -191,7 +221,7 @@
                         android:id="@+id/tilActivityEdit"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
+                        android:layout_marginTop="4dp"
                         android:visibility="gone"
                         style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
 
@@ -199,7 +229,7 @@
                             android:id="@+id/etActivityEdit"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:hint="กิจกรรม"
+                            android:hint="เลือกการออกกำลังกาย"
                             android:inputType="none"/>
                     </com.google.android.material.textfield.TextInputLayout>
 
@@ -225,39 +255,74 @@
                         android:layout_height="wrap_content"
                         android:text="เปิดการแจ้งเตือน "/>
 
-                    <!-- Time -->
+                    <!-- Time Section -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:text="ช่วงเวลาการดื่มน้ำ"
+                        android:textStyle="bold"
+                        android:textSize="14sp"/>
+
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
+                        android:layout_marginTop="8dp"
                         android:orientation="horizontal"
                         android:gravity="center">
 
-                        <EditText
-                            android:id="@+id/etStartTime"
+                        <LinearLayout
                             android:layout_width="0dp"
-                            android:layout_height="48dp"
+                            android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:background="@drawable/edittext_bg"
-                            android:hint="08:00"
-                            android:focusable="false"
-                            android:enabled="false"/>
+                            android:orientation="vertical">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="เวลาตื่น"
+                                android:textSize="11sp"
+                                android:textColor="#666666"/>
+                            <EditText
+                                android:id="@+id/etStartTime"
+                                android:layout_width="match_parent"
+                                android:layout_height="48dp"
+                                android:layout_marginTop="2dp"
+                                android:background="@drawable/edittext_bg"
+                                android:hint="08:00"
+                                android:paddingHorizontal="12dp"
+                                android:focusable="false"
+                                android:enabled="false"/>
+                        </LinearLayout>
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text=" → "
+                            android:layout_marginTop="15dp"
                             android:padding="8dp"/>
 
-                        <EditText
-                            android:id="@+id/etEndTime"
+                        <LinearLayout
                             android:layout_width="0dp"
-                            android:layout_height="48dp"
+                            android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:background="@drawable/edittext_bg"
-                            android:hint="22:00"
-                            android:focusable="false"
-                            android:enabled="false"/>
+                            android:orientation="vertical">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="เวลานอน"
+                                android:textSize="11sp"
+                                android:textColor="#666666"/>
+                            <EditText
+                                android:id="@+id/etEndTime"
+                                android:layout_width="match_parent"
+                                android:layout_height="48dp"
+                                android:layout_marginTop="2dp"
+                                android:background="@drawable/edittext_bg"
+                                android:hint="22:00"
+                                android:paddingHorizontal="12dp"
+                                android:focusable="false"
+                                android:enabled="false"/>
+                        </LinearLayout>
                     </LinearLayout>
 
                 </LinearLayout>
@@ -268,7 +333,7 @@
                 android:id="@+id/btnSave"
                 android:layout_width="294dp"
                 android:layout_height="48dp"
-                android:text="บันทึก"
+                android:text="บันทึกการเปลี่ยนแปลง"
                 android:textStyle="bold"
                 android:textColor="@android:color/white"
                 android:backgroundTint="#5FACE0"
