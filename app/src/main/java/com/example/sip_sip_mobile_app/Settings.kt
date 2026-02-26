@@ -2,20 +2,23 @@ package com.example.sip_sip_mobile_app
 
 import android.app.Activity
 import android.app.TimePickerDialog
+import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
 import android.view.View
+import android.view.inputmethod.InputMethodManager
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
+import androidx.core.widget.addTextChangedListener
 import cn.pedant.SweetAlert.SweetAlertDialog
 import com.bumptech.glide.Glide
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.imageview.ShapeableImageView
 import com.google.android.material.switchmaterial.SwitchMaterial
+import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -40,14 +43,18 @@ class Settings : AppCompatActivity() {
     private lateinit var etGenderView: EditText
     private lateinit var tilGenderEdit: TextInputLayout
     private lateinit var etGenderEdit: AutoCompleteTextView
-    private lateinit var etWeight: EditText
+    
+    private lateinit var etWeightView: EditText
+    private lateinit var tilWeightEdit: TextInputLayout
+    private lateinit var etWeightEdit: TextInputEditText
+    
     private lateinit var etStartTime: EditText
     private lateinit var etEndTime: EditText
     private lateinit var switchNotify: SwitchMaterial
 
     private lateinit var etActivityView: EditText
+    private lateinit var tilActivityEdit: TextInputLayout
     private lateinit var etActivityEdit: AutoCompleteTextView
-    private lateinit var tilActivityEdit: View
 
     // ===== buttons =====
     private lateinit var btnEditProfile: MaterialButton
@@ -76,8 +83,7 @@ class Settings : AppCompatActivity() {
         setContentView(R.layout.activity_settings)
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
-            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            // ปรับ padding ให้สม่ำเสมอ โดยเฉพาะด้านล่างที่อาจจะโดนระบบดึงพื้นที่ไป
+            val bars = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars())
             v.setPadding(bars.left, bars.top, bars.right, 0) 
             insets
         }
@@ -106,15 +112,18 @@ class Settings : AppCompatActivity() {
         btnCancel.setOnClickListener {
             restoreOldValues()
             setEditable(false)
+            clearErrors()
         }
 
         btnSave.setOnClickListener {
-            confirmSaveProfile()
+            hideKeyboard()
+            if (validateInputs()) {
+                confirmSaveProfile()
+            }
         }
 
         btnBack.setOnClickListener {
-            val intent = Intent(this, MainActivity::class.java)
-            startActivity(intent)
+            finish()
         }
 
         btnLogout.setOnClickListener {
@@ -122,8 +131,7 @@ class Settings : AppCompatActivity() {
         }
 
         val bottomNavView = findViewById<View>(R.id.layout_bottom_nav)
-        val bottomNavManager = BottomNavManager(this, bottomNavView)
-        bottomNavManager.setupBottomNavigation()
+        BottomNavManager(this, bottomNavView).setupBottomNavigation()
     }
 
     private fun bindViews() {
@@ -132,29 +140,82 @@ class Settings : AppCompatActivity() {
         etNameEdit = findViewById(R.id.etNameEdit)
         tvEmail = findViewById(R.id.tvEmail)
         btnLogout = findViewById(R.id.btnLogout)
+        
         etGenderView = findViewById(R.id.etGenderView)
         tilGenderEdit = findViewById(R.id.tilGenderEdit)
         etGenderEdit = findViewById(R.id.etGenderEdit)
-        etWeight = findViewById(R.id.etWeight)
+        
+        etWeightView = findViewById(R.id.etWeightView)
+        tilWeightEdit = findViewById(R.id.tilWeightEdit)
+        etWeightEdit = findViewById(R.id.etWeightEdit)
+        
         etStartTime = findViewById(R.id.etStartTime)
         etEndTime = findViewById(R.id.etEndTime)
         switchNotify = findViewById(R.id.switchNotify)
+        
         etActivityView = findViewById(R.id.etActivityView)
-        etActivityEdit = findViewById(R.id.etActivityEdit)
         tilActivityEdit = findViewById(R.id.tilActivityEdit)
+        etActivityEdit = findViewById(R.id.etActivityEdit)
+        
         btnEditProfile = findViewById(R.id.btnEditProfile)
         btnSave = findViewById(R.id.btnSave)
         btnCancel = findViewById(R.id.btnCancel)
         btnBack = findViewById(R.id.btnBack)
+
+        // Clear error on change
+        etWeightEdit.addTextChangedListener { tilWeightEdit.error = null }
+        etGenderEdit.addTextChangedListener { tilGenderEdit.error = null }
+        etActivityEdit.addTextChangedListener { tilActivityEdit.error = null }
+    }
+
+    private fun validateInputs(): Boolean {
+        var isValid = true
+
+        val gender = etGenderEdit.text.toString()
+        val weightStr = etWeightEdit.text.toString()
+        val activity = etActivityEdit.text.toString()
+        val startTime = etStartTime.text.toString()
+        val endTime = etEndTime.text.toString()
+
+        if (gender.isEmpty()) {
+            tilGenderEdit.error = "กรุณาเลือกเพศ"
+            isValid = false
+        }
+
+        if (weightStr.isEmpty()) {
+            tilWeightEdit.error = "กรุณากรอกน้ำหนัก"
+            isValid = false
+        } else {
+            val weight = weightStr.toDoubleOrNull()
+            if (weight == null || weight < 30 || weight > 300) {
+                tilWeightEdit.error = "กรุณากรอกน้ำหนักที่ถูกต้อง (30-300 กก.)"
+                isValid = false
+            }
+        }
+
+        if (activity.isEmpty()) {
+            tilActivityEdit.error = "กรุณาเลือกกิจกรรม"
+            isValid = false
+        }
+
+        if (startTime.isEmpty()) Toast.makeText(this, "กรุณาเลือกเวลาตื่น", Toast.LENGTH_SHORT).show()
+        if (endTime.isEmpty()) Toast.makeText(this, "กรุณาเลือกเวลานอน", Toast.LENGTH_SHORT).show()
+
+        if (startTime.isNotEmpty() && endTime.isNotEmpty() && startTime == endTime) {
+            Toast.makeText(this, "เวลาเข้านอนต้องไม่ซ้ำกับเวลาตื่น", Toast.LENGTH_SHORT).show()
+            isValid = false
+        }
+
+        return isValid
+    }
+
+    private fun clearErrors() {
+        tilGenderEdit.error = null
+        tilWeightEdit.error = null
+        tilActivityEdit.error = null
     }
 
     private fun confirmSaveProfile() {
-        if (etActivityEdit.text.isEmpty() || etWeight.text.isEmpty() ||
-            etStartTime.text.isEmpty() || etEndTime.text.isEmpty()) {
-            Toast.makeText(this, "กรุณากรอกข้อมูลให้ครบ", Toast.LENGTH_SHORT).show()
-            return
-        }
-
         val pDialog = SweetAlertDialog(this, SweetAlertDialog.WARNING_TYPE)
         pDialog.titleText = "ยืนยันการแก้ไข?"
         pDialog.contentText = "คุณต้องการบันทึกข้อมูลใหม่ใช่หรือไม่?"
@@ -163,29 +224,15 @@ class Settings : AppCompatActivity() {
         pDialog.showCancelButton(true)
 
         pDialog.setConfirmClickListener { sDialog ->
+            sDialog.dismissWithAnimation()
             saveProfile()
-
-            sDialog.setTitleText("สำเร็จ!")
-                .setContentText("บันทึกข้อมูลเรียบร้อยแล้ว")
-                .setConfirmText("ตกลง")
-                .showCancelButton(false)
-                .setConfirmClickListener(null)
-                .changeAlertType(SweetAlertDialog.SUCCESS_TYPE)
-
-            sDialog.getButton(SweetAlertDialog.BUTTON_CONFIRM).post {
-                sDialog.getButton(SweetAlertDialog.BUTTON_CONFIRM).setBackgroundResource(R.drawable.btn_round_green)
-            }
         }
 
         pDialog.show()
 
         pDialog.getButton(SweetAlertDialog.BUTTON_CONFIRM).post {
-            val btnConfirm = pDialog.getButton(SweetAlertDialog.BUTTON_CONFIRM)
-            val btnCancel = pDialog.getButton(SweetAlertDialog.BUTTON_CANCEL)
-            btnConfirm.setBackgroundResource(R.drawable.btn_round_green)
-            btnCancel.setBackgroundResource(R.drawable.btn_round_red)
-            btnConfirm.setTextColor(Color.WHITE)
-            btnCancel.setTextColor(Color.WHITE)
+            pDialog.getButton(SweetAlertDialog.BUTTON_CONFIRM).setBackgroundResource(R.drawable.btn_round_green)
+            pDialog.getButton(SweetAlertDialog.BUTTON_CANCEL).setBackgroundResource(R.drawable.btn_round_red)
         }
     }
 
@@ -207,8 +254,6 @@ class Settings : AppCompatActivity() {
         pDialog.getButton(SweetAlertDialog.BUTTON_CONFIRM).post {
             pDialog.getButton(SweetAlertDialog.BUTTON_CONFIRM).setBackgroundResource(R.drawable.btn_round_red)
             pDialog.getButton(SweetAlertDialog.BUTTON_CANCEL).setBackgroundResource(R.drawable.btn_round_green)
-            pDialog.getButton(SweetAlertDialog.BUTTON_CONFIRM).setTextColor(Color.WHITE)
-            pDialog.getButton(SweetAlertDialog.BUTTON_CANCEL).setTextColor(Color.WHITE)
         }
     }
 
@@ -216,13 +261,14 @@ class Settings : AppCompatActivity() {
         val uid = auth.currentUser?.uid ?: return
 
         val genderStr = etGenderEdit.text.toString()
-        val weightStr = etWeight.text.toString()
+        val weightStr = etWeightEdit.text.toString()
         val activityStr = etActivityEdit.text.toString()
 
         val weightKg = weightStr.toDouble()
         val gender = mapGender(genderStr)
         val activityLevel = mapActivityLevel(activityStr)
         val goalMl = calculateDailyWater(weightKg, gender, activityLevel)
+        val roundedGoal = (Math.round(goalMl / 10.0) * 10).toInt()
 
         val profileData: HashMap<String, Any> = hashMapOf(
             "name" to etNameEdit.text.toString(),
@@ -235,32 +281,52 @@ class Settings : AppCompatActivity() {
         )
 
         val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-        db.collection("consumptions").document("${uid}_$today").update("goal_ml", goalMl)
+        db.collection("consumptions").document("${uid}_$today").get().addOnSuccessListener { doc ->
+            if (doc.exists()) {
+                db.collection("consumptions").document("${uid}_$today").update("goal_ml", roundedGoal)
+            }
+        }
+
+        val loadingDialog = SweetAlertDialog(this, SweetAlertDialog.PROGRESS_TYPE)
+        loadingDialog.titleText = "กำลังบันทึก..."
+        loadingDialog.setCancelable(false)
+        loadingDialog.show()
 
         if (imageUri != null) {
-            uploadAvatar(uid, profileData)
+            val ref = storage.reference.child("profile_images").child("$uid.jpg")
+            ref.putFile(imageUri!!)
+                .addOnSuccessListener {
+                    ref.downloadUrl.addOnSuccessListener { uri ->
+                        profileData["avatarUrl"] = uri.toString()
+                        updateFirestore(uid, profileData, loadingDialog)
+                    }
+                }
+                .addOnFailureListener {
+                    loadingDialog.dismissWithAnimation()
+                    Toast.makeText(this, "อัปโหลดรูปภาพล้มเหลว", Toast.LENGTH_SHORT).show()
+                }
         } else {
-            saveProfileData(uid, profileData)
+            updateFirestore(uid, profileData, loadingDialog)
         }
     }
 
-    private fun uploadAvatar(uid: String, profileData: HashMap<String, Any>) {
-        val ref = storage.reference.child("profile_images").child("$uid.jpg")
-        ref.putFile(imageUri!!)
+    private fun updateFirestore(uid: String, data: Map<String, Any>, loadingDialog: SweetAlertDialog) {
+        db.collection("users").document(uid).update(data)
             .addOnSuccessListener {
-                ref.downloadUrl.addOnSuccessListener { uri ->
-                    profileData["avatarUrl"] = uri.toString()
-                    saveProfileData(uid, profileData)
-                }
+                loadingDialog.dismissWithAnimation()
+                SweetAlertDialog(this, SweetAlertDialog.SUCCESS_TYPE)
+                    .setTitleText("สำเร็จ!")
+                    .setContentText("บันทึกข้อมูลเรียบร้อยแล้ว")
+                    .setConfirmClickListener { 
+                        it.dismissWithAnimation()
+                        imageUri = null
+                        setEditable(false)
+                    }
+                    .show()
             }
-    }
-
-    private fun saveProfileData(uid: String, profileData: Map<String, Any>) {
-        db.collection("users").document(uid)
-            .update(profileData)
-            .addOnSuccessListener {
-                imageUri = null
-                setEditable(false)
+            .addOnFailureListener {
+                loadingDialog.dismissWithAnimation()
+                Toast.makeText(this, "บันทึกข้อมูลล้มเหลว: ${it.message}", Toast.LENGTH_SHORT).show()
             }
     }
 
@@ -277,9 +343,15 @@ class Settings : AppCompatActivity() {
             etActivityEdit.setText(etActivityView.text.toString(), false)
             etActivityView.visibility = View.GONE
             tilActivityEdit.visibility = View.VISIBLE
+            
             etGenderEdit.setText(etGenderView.text.toString(), false)
             etGenderView.visibility = View.GONE
             tilGenderEdit.visibility = View.VISIBLE
+            
+            etWeightEdit.setText(etWeightView.text.toString())
+            etWeightView.visibility = View.GONE
+            tilWeightEdit.visibility = View.VISIBLE
+            
             etNameEdit.setText(tvNameView.text.toString())
             tvNameView.visibility = View.GONE
             etNameEdit.visibility = View.VISIBLE
@@ -287,15 +359,20 @@ class Settings : AppCompatActivity() {
             etActivityView.setText(etActivityEdit.text.toString())
             etActivityView.visibility = View.VISIBLE
             tilActivityEdit.visibility = View.GONE
+            
             etGenderView.setText(etGenderEdit.text.toString())
             etGenderView.visibility = View.VISIBLE
             tilGenderEdit.visibility = View.GONE
+            
+            etWeightView.setText(etWeightEdit.text.toString())
+            etWeightView.visibility = View.VISIBLE
+            tilWeightEdit.visibility = View.GONE
+            
             tvNameView.text = etNameEdit.text.toString()
             tvNameView.visibility = View.VISIBLE
             etNameEdit.visibility = View.GONE
         }
         imgAvatar.isEnabled = enable
-        etWeight.isEnabled = enable
         etStartTime.isEnabled = enable
         etEndTime.isEnabled = enable
         switchNotify.isEnabled = enable
@@ -310,7 +387,7 @@ class Settings : AppCompatActivity() {
         tvEmail.text = user.email ?: ""
         db.collection("users").document(user.uid).get().addOnSuccessListener { doc ->
             if (doc != null && doc.exists()) {
-                val name = doc.getString("name") ?: doc.getString("username") ?: ""
+                val name = doc.getString("name") ?: ""
                 tvNameView.text = name
                 etNameEdit.setText(name)
 
@@ -326,7 +403,11 @@ class Settings : AppCompatActivity() {
                 val activity = doc.getString("activity") ?: ""
                 etActivityView.setText(activity)
                 etActivityEdit.setText(activity, false)
-                etWeight.setText(doc.getLong("weight")?.toString() ?: "")
+                
+                val weightValue = doc.get("weight")?.toString() ?: ""
+                etWeightView.setText(weightValue)
+                etWeightEdit.setText(weightValue)
+                
                 etStartTime.setText(doc.getString("wakeTime") ?: "")
                 etEndTime.setText(doc.getString("sleepTime") ?: "")
                 switchNotify.isChecked = doc.getBoolean("notify") ?: false
@@ -337,7 +418,7 @@ class Settings : AppCompatActivity() {
     private fun cacheOldValues() {
         oldName = tvNameView.text.toString()
         oldActivity = etActivityView.text.toString()
-        oldWeight = etWeight.text.toString()
+        oldWeight = etWeightView.text.toString()
         oldStart = etStartTime.text.toString()
         oldEnd = etEndTime.text.toString()
         oldGender = etGenderView.text.toString()
@@ -349,7 +430,8 @@ class Settings : AppCompatActivity() {
         etNameEdit.setText(oldName)
         etActivityView.setText(oldActivity)
         etActivityEdit.setText(oldActivity, false)
-        etWeight.setText(oldWeight)
+        etWeightView.setText(oldWeight)
+        etWeightEdit.setText(oldWeight)
         etStartTime.setText(oldStart)
         etEndTime.setText(oldEnd)
         etGenderView.setText(oldGender)
@@ -358,13 +440,10 @@ class Settings : AppCompatActivity() {
     }
 
     private fun setupDropdowns() {
-        val genderAdapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, listOf("ชาย", "หญิง", "อื่นๆ"))
-        etGenderEdit.setAdapter(genderAdapter)
-        etGenderEdit.setOnClickListener { etGenderEdit.showDropDown() }
-
-        val activityAdapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, listOf("ไม่ออกกำลังกาย", "เล็กน้อย", "ปานกลาง", "หนัก"))
-        etActivityEdit.setAdapter(activityAdapter)
-        etActivityEdit.setOnClickListener { etActivityEdit.showDropDown() }
+        val genders = listOf("ชาย", "หญิง", "อื่นๆ")
+        etGenderEdit.setAdapter(ArrayAdapter(this, android.R.layout.simple_list_item_1, genders))
+        val activities = listOf("ไม่ออกกำลังกาย", "เล็กน้อย", "ปานกลาง", "หนัก")
+        etActivityEdit.setAdapter(ArrayAdapter(this, android.R.layout.simple_list_item_1, activities))
     }
 
     private fun setupTimePickers() {
@@ -377,6 +456,14 @@ class Settings : AppCompatActivity() {
         TimePickerDialog(this, { _, h, m -> onPicked(String.format("%02d:%02d", h, m)) }, cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE), true).show()
     }
 
+    private fun hideKeyboard() {
+        val view = this.currentFocus
+        if (view != null) {
+            val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+            imm.hideSoftInputFromWindow(view.windowToken, 0)
+        }
+    }
+
     private fun logout() {
         auth.signOut()
         val intent = Intent(this, Login::class.java)
@@ -385,7 +472,6 @@ class Settings : AppCompatActivity() {
         finish()
     }
 
-    // Helper functions for calculation
     private fun calculateDailyWater(weight: Double, gender: MainActivity.Gender, activityLevel: MainActivity.ActivityLevel): Int {
         val baseIntake = weight * 30
         val activityBonus = when (activityLevel) {

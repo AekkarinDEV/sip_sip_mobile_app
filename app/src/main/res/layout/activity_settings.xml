@@ -187,16 +187,34 @@
                         android:textColor="#666666"
                         android:layout_marginTop="12dp"/>
 
-                    <!-- Weight -->
+                    <!-- Weight : VIEW MODE -->
                     <EditText
-                        android:id="@+id/etWeight"
+                        android:id="@+id/etWeightView"
                         android:layout_width="match_parent"
                         android:layout_height="48dp"
                         android:layout_marginTop="4dp"
                         android:background="@drawable/edittext_bg"
-                        android:hint="ตัวอย่าง: 65"
+                        android:hint="น้ำหนัก"
                         android:paddingHorizontal="12dp"
-                        android:inputType="number"/>
+                        android:enabled="false"/>
+
+                    <!-- Weight : EDIT MODE -->
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilWeightEdit"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:visibility="gone"
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etWeightEdit"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="ตัวอย่าง: 65"
+                            android:inputType="numberDecimal" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
 
                     <!-- Label: Activity -->
                     <TextView

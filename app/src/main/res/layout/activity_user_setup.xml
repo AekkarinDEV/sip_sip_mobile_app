@@ -120,18 +120,27 @@
                     app:layout_constraintStart_toStartOf="parent"/>
 
                 <!-- Weight -->
-                <EditText
-                    android:id="@+id/etWeight"
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilWeight"
                     android:layout_width="0dp"
-                    android:layout_height="48dp"
+                    android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
-                    android:background="@drawable/edittext_bg"
-                    android:hint="เช่น 65"
-                    android:paddingHorizontal="12dp"
-                    android:inputType="number"
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                    app:boxCornerRadiusTopStart="12dp"
+                    app:boxCornerRadiusTopEnd="12dp"
+                    app:boxCornerRadiusBottomStart="12dp"
+                    app:boxCornerRadiusBottomEnd="12dp"
                     app:layout_constraintTop_toBottomOf="@id/tvLabelWeight"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent"/>
+                    app:layout_constraintEnd_toEndOf="parent">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etWeight"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="เช่น 65"
+                        android:inputType="numberDecimal" />
+                </com.google.android.material.textfield.TextInputLayout>
 
                 <!-- Label: Activity -->
                 <TextView
@@ -142,7 +151,7 @@
                     android:textSize="12sp"
                     android:textColor="#666666"
                     android:layout_marginTop="12dp"
-                    app:layout_constraintTop_toBottomOf="@id/etWeight"
+                    app:layout_constraintTop_toBottomOf="@id/tilWeight"
                     app:layout_constraintStart_toStartOf="parent"/>
 
                 <!-- Activity dropdown -->
@@ -236,20 +245,30 @@
                     app:layout_constraintStart_toStartOf="parent"/>
 
                 <!-- เวลาตื่น -->
-                <EditText
-                    android:id="@+id/etStartTime"
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilStartTime"
                     android:layout_width="0dp"
-                    android:layout_height="48dp"
+                    android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
-                    android:background="@drawable/edittext_bg"
-                    android:hint="08:00"
-                    android:paddingHorizontal="12dp"
-                    android:focusable="false"
-                    android:clickable="true"
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                    app:boxCornerRadiusTopStart="12dp"
+                    app:boxCornerRadiusTopEnd="12dp"
+                    app:boxCornerRadiusBottomStart="12dp"
+                    app:boxCornerRadiusBottomEnd="12dp"
                     app:layout_constraintTop_toBottomOf="@id/tvWakeTime"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintEnd_toStartOf="@id/etEndTime"
-                    app:layout_constraintWidth_percent="0.45"/>
+                    app:layout_constraintEnd_toStartOf="@id/tilEndTime"
+                    app:layout_constraintHorizontal_chainStyle="spread_inside"
+                    app:layout_constraintWidth_percent="0.45">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etStartTime"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="08:00"
+                        android:focusable="false"
+                        android:clickable="true" />
+                </com.google.android.material.textfield.TextInputLayout>
 
                 <!-- label เวลานอน -->
                 <TextView
@@ -261,22 +280,31 @@
                     android:textColor="#666666"
                     android:layout_marginTop="8dp"
                     app:layout_constraintTop_toBottomOf="@id/tvTimeTitle"
-                    app:layout_constraintStart_toStartOf="@id/etEndTime"/>
+                    app:layout_constraintStart_toStartOf="@id/tilEndTime"/>
 
                 <!-- เวลานอน -->
-                <EditText
-                    android:id="@+id/etEndTime"
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilEndTime"
                     android:layout_width="0dp"
-                    android:layout_height="48dp"
+                    android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
-                    android:background="@drawable/edittext_bg"
-                    android:hint="22:00"
-                    android:paddingHorizontal="12dp"
-                    android:focusable="false"
-                    android:clickable="true"
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                    app:boxCornerRadiusTopStart="12dp"
+                    app:boxCornerRadiusTopEnd="12dp"
+                    app:boxCornerRadiusBottomStart="12dp"
+                    app:boxCornerRadiusBottomEnd="12dp"
                     app:layout_constraintTop_toBottomOf="@id/tvSleepTime"
                     app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintWidth_percent="0.45"/>
+                    app:layout_constraintWidth_percent="0.45">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etEndTime"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="22:00"
+                        android:focusable="false"
+                        android:clickable="true" />
+                </com.google.android.material.textfield.TextInputLayout>
 
             </androidx.constraintlayout.widget.ConstraintLayout>
         </com.google.android.material.card.MaterialCardView>
