@@ -6,6 +6,7 @@ import android.graphics.*
 import android.util.AttributeSet
 import android.view.View
 import android.view.animation.LinearInterpolator
+import androidx.annotation.ColorInt
 import kotlin.math.min
 import kotlin.math.sin
 
@@ -65,12 +66,7 @@ class WaterDropView @JvmOverloads constructor(
         circlePath.reset()
         circlePath.addCircle(w / 2f, h / 2f, radius, Path.Direction.CW)
 
-        waterPaint.shader = LinearGradient(
-            w / 2f, h / 2f - radius, w / 2f, h / 2f + radius,
-            Color.parseColor("#81D4FA"), // Light Blue
-            Color.parseColor("#29B6F6"), // Darker Blue
-            Shader.TileMode.CLAMP
-        )
+        updateWaterColor(Color.parseColor("#81D4FA"), Color.parseColor("#29B6F6"))
 
         textPaint.textSize = radius * 0.6f
     }
@@ -121,5 +117,24 @@ class WaterDropView @JvmOverloads constructor(
     fun setProgress(value: Int) {
         this.percentage = value.coerceIn(0, 100)
         invalidate() // Redraw the view
+    }
+
+    fun setPercentageColor(@ColorInt color: Int) {
+        textPaint.color = color
+        invalidate()
+    }
+
+    fun setWaterColor(@ColorInt startColor: Int, @ColorInt endColor: Int) {
+        updateWaterColor(startColor, endColor)
+        invalidate()
+    }
+
+    private fun updateWaterColor(startColor: Int, endColor: Int) {
+        waterPaint.shader = LinearGradient(
+            viewWidth / 2f, viewHeight / 2f - radius, viewWidth / 2f, viewHeight / 2f + radius,
+            startColor,
+            endColor,
+            Shader.TileMode.CLAMP
+        )
     }
 }
