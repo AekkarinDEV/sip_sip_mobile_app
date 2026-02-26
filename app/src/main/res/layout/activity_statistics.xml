@@ -60,47 +60,55 @@
                         android:layout_height="wrap_content"
                         android:background="@drawable/bg_toggle_group"
                         android:orientation="horizontal"
-                        android:padding="4dp">
+                        android:padding="8dp">
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnWeek"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
+                            android:layout_marginEnd="4dp"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
                             android:text="สัปดาห์"
+                            android:textAllCaps="false"
                             android:textColor="#FFFFFF"
                             android:textSize="14sp"
-                            android:minHeight="0dp"
-                            android:paddingVertical="10dp"
                             app:backgroundTint="#5DADE2"
                             app:cornerRadius="12dp"
-                            app:elevation="0dp" />
+                            app:elevation="4dp" />
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnMonth"
-                            style="@style/Widget.MaterialComponents.Button.TextButton"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
+                            android:layout_marginHorizontal="4dp"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
                             android:text="เดือน"
-                            android:textColor="#999999"
+                            android:textAllCaps="false"
+                            android:textColor="#333333"
                             android:textSize="14sp"
-                            android:minHeight="0dp"
-                            android:paddingVertical="10dp"
-                            app:elevation="0dp" />
+                            app:backgroundTint="#FFFFFF"
+                            app:cornerRadius="12dp"
+                            app:elevation="2dp" />
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnYear"
-                            style="@style/Widget.MaterialComponents.Button.TextButton"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
+                            android:layout_marginStart="4dp"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
                             android:text="ปี"
-                            android:textColor="#999999"
+                            android:textAllCaps="false"
+                            android:textColor="#333333"
                             android:textSize="14sp"
-                            android:minHeight="0dp"
-                            android:paddingVertical="10dp"
-                            app:elevation="0dp" />
+                            app:backgroundTint="#FFFFFF"
+                            app:cornerRadius="12dp"
+                            app:elevation="2dp" />
                     </LinearLayout>
 
                     <LinearLayout

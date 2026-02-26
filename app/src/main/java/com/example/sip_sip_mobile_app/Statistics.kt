@@ -1,5 +1,7 @@
 package com.example.sip_sip_mobile_app
 
+import android.content.res.ColorStateList
+import android.graphics.Color
 import android.os.Bundle
 import android.util.Log
 import android.view.View
@@ -16,6 +18,7 @@ import com.github.mikephil.charting.data.BarData
 import com.github.mikephil.charting.data.BarDataSet
 import com.github.mikephil.charting.data.BarEntry
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
+import com.google.android.material.button.MaterialButton
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import java.text.SimpleDateFormat
@@ -38,9 +41,15 @@ class Statistics : AppCompatActivity() {
     private lateinit var tvOverallAverage: TextView
     private lateinit var tvOverallTotal: TextView
 
+    private lateinit var btnWeek: MaterialButton
+    private lateinit var btnMonth: MaterialButton
+    private lateinit var btnYear: MaterialButton
+
     private var currentPeriod = StatPeriod.WEEK
     private val calendar = Calendar.getInstance()
-    private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+    
+    // ใช้ Locale.getDefault() เพื่อให้ตรงกับ MainActivity และ UserSetup (รองรับ พ.ศ.)
+    private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -63,6 +72,10 @@ class Statistics : AppCompatActivity() {
         tvOverallAverage = findViewById(R.id.tvOverallAverage)
         tvOverallTotal = findViewById(R.id.tvOverallTotal)
 
+        btnWeek = findViewById(R.id.btnWeek)
+        btnMonth = findViewById(R.id.btnMonth)
+        btnYear = findViewById(R.id.btnYear)
+
         setupTabs()
         setupNavigation()
         updateUI()
@@ -74,20 +87,41 @@ class Statistics : AppCompatActivity() {
     }
 
     private fun setupTabs() {
-        findViewById<Button>(R.id.btnWeek).setOnClickListener {
+        btnWeek.setOnClickListener {
             currentPeriod = StatPeriod.WEEK
             calendar.time = Date()
             updateUI()
         }
-        findViewById<Button>(R.id.btnMonth).setOnClickListener {
+        btnMonth.setOnClickListener {
             currentPeriod = StatPeriod.MONTH
             calendar.time = Date()
             updateUI()
         }
-        findViewById<Button>(R.id.btnYear).setOnClickListener {
+        btnYear.setOnClickListener {
             currentPeriod = StatPeriod.YEAR
             calendar.time = Date()
             updateUI()
+        }
+    }
+
+    private fun updateTabStyles() {
+        val selectedColor = "#5DADE2".toColorInt()
+        val unselectedColor = Color.WHITE
+        val selectedTextColor = Color.WHITE
+        val unselectedTextColor = "#333333".toColorInt()
+
+        val buttons = listOf(btnWeek to StatPeriod.WEEK, btnMonth to StatPeriod.MONTH, btnYear to StatPeriod.YEAR)
+
+        buttons.forEach { (btn, period) ->
+            if (currentPeriod == period) {
+                btn.backgroundTintList = ColorStateList.valueOf(selectedColor)
+                btn.setTextColor(selectedTextColor)
+                btn.elevation = 4f
+            } else {
+                btn.backgroundTintList = ColorStateList.valueOf(unselectedColor)
+                btn.setTextColor(unselectedTextColor)
+                btn.elevation = 0f
+            }
         }
     }
 
@@ -112,6 +146,7 @@ class Statistics : AppCompatActivity() {
     }
 
     private fun updateUI() {
+        updateTabStyles()
         updatePeriodLabel()
         loadPeriodData()
         loadOverallSummary()
@@ -135,41 +170,68 @@ class Statistics : AppCompatActivity() {
             StatPeriod.YEAR -> getYearRange()
         }
 
-        val entries = MutableList(labels.size) { 0f }
-        var total = 0f
-        var best = 0f
-        var count = 0
-        var loaded = 0
+        val startStr = dateFormat.format(start.time)
+        val endStr = dateFormat.format(end.time)
 
-        val tempCal = start.clone() as Calendar
-        var index = 0
+        db.collection("consumptions")
+            .whereEqualTo("user_id", user.uid)
+            .get()
+            .addOnSuccessListener { documents ->
+                val entries = MutableList(labels.size) { 0f }
+                var total = 0f
+                var best = 0f
+                var count = 0
 
-        while (!tempCal.after(end)) {
-            val currentIndex = index
-            val dateString = dateFormat.format(tempCal.time)
-            val docId = "${user.uid}_$dateString"
+                for (doc in documents) {
+                    // ตรวจสอบทั้ง "date" และ "date_string" เพื่อความยืดหยุ่น
+                    val dateStr = doc.getString("date") ?: doc.getString("date_string") ?: ""
+                    if (dateStr < startStr || dateStr > endStr) continue
 
-            db.collection("consumptions").document(docId).get()
-                .addOnSuccessListener { document ->
-                    val intake = document.getLong("total_intake_ml")?.toFloat() ?: 0f
-                    if (currentIndex < entries.size) {
-                        entries[currentIndex] = intake / 1000f
-                    }
-                    if (intake > 0) {
-                        total += intake
-                        if (intake > best) best = intake
-                        count++
-                    }
-                    loaded++
-                    if (loaded == labels.size) {
-                        val barEntries = entries.mapIndexed { i, value -> BarEntry(i.toFloat(), value) }
-                        setupChart(barEntries, labels)
-                        updateSummary(total, best, count)
+                    val intake = doc.getLong("total_intake_ml")?.toFloat() ?: 0f
+                    
+                    try {
+                        val date = dateFormat.parse(dateStr) ?: continue
+                        val cal = Calendar.getInstance()
+                        cal.time = date
+                        
+                        val index = when (currentPeriod) {
+                            StatPeriod.WEEK -> {
+                                val dayOfWeek = cal.get(Calendar.DAY_OF_WEEK)
+                                (dayOfWeek - Calendar.SUNDAY + 7) % 7
+                            }
+                            StatPeriod.MONTH -> {
+                                cal.get(Calendar.DAY_OF_MONTH) - 1
+                            }
+                            StatPeriod.YEAR -> {
+                                cal.get(Calendar.MONTH)
+                            }
+                        }
+
+                        if (index in entries.indices) {
+                            if (currentPeriod == StatPeriod.YEAR) {
+                                entries[index] += intake / 1000f
+                            } else {
+                                entries[index] = intake / 1000f
+                            }
+                        }
+
+                        if (intake > 0) {
+                            total += intake
+                            if (intake > best) best = intake
+                            count++
+                        }
+                    } catch (e: Exception) {
+                        Log.e("Statistics", "Error parsing date: $dateStr")
                     }
                 }
-            tempCal.add(Calendar.DATE, 1)
-            index++
-        }
+
+                val barEntries = entries.mapIndexed { i, value -> BarEntry(i.toFloat(), value) }
+                setupChart(barEntries, labels)
+                updateSummary(total, best, count)
+            }
+            .addOnFailureListener { e ->
+                Log.e("Statistics", "Error loading data: ${e.message}")
+            }
     }
 
     private fun setupChart(entries: List<BarEntry>, labels: List<String>) {
@@ -220,16 +282,28 @@ class Statistics : AppCompatActivity() {
     private fun getWeekRange(): Triple<Calendar, Calendar, List<String>> {
         val start = calendar.clone() as Calendar
         start.set(Calendar.DAY_OF_WEEK, Calendar.SUNDAY)
+        start.set(Calendar.HOUR_OF_DAY, 0)
+        start.set(Calendar.MINUTE, 0)
+        start.set(Calendar.SECOND, 0)
+        
         val end = start.clone() as Calendar
         end.add(Calendar.DATE, 6)
+        end.set(Calendar.HOUR_OF_DAY, 23)
+        end.set(Calendar.MINUTE, 59)
+        end.set(Calendar.SECOND, 59)
+        
         return Triple(start, end, listOf("อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"))
     }
 
     private fun getMonthRange(): Triple<Calendar, Calendar, List<String>> {
         val start = calendar.clone() as Calendar
         start.set(Calendar.DAY_OF_MONTH, 1)
+        start.set(Calendar.HOUR_OF_DAY, 0)
+        
         val end = start.clone() as Calendar
         end.set(Calendar.DAY_OF_MONTH, end.getActualMaximum(Calendar.DAY_OF_MONTH))
+        end.set(Calendar.HOUR_OF_DAY, 23)
+        
         val labels = (1..start.getActualMaximum(Calendar.DAY_OF_MONTH)).map { it.toString() }
         return Triple(start, end, labels)
     }
@@ -237,8 +311,13 @@ class Statistics : AppCompatActivity() {
     private fun getYearRange(): Triple<Calendar, Calendar, List<String>> {
         val start = calendar.clone() as Calendar
         start.set(Calendar.DAY_OF_YEAR, 1)
+        start.set(Calendar.HOUR_OF_DAY, 0)
+        
         val end = start.clone() as Calendar
-        end.set(Calendar.DAY_OF_YEAR, end.getActualMaximum(Calendar.DAY_OF_YEAR))
+        end.set(Calendar.MONTH, Calendar.DECEMBER)
+        end.set(Calendar.DAY_OF_MONTH, 31)
+        end.set(Calendar.HOUR_OF_DAY, 23)
+
         val labels = listOf("ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค.")
         return Triple(start, end, labels)
     }
