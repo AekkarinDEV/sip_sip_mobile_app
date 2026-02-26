@@ -44,7 +44,6 @@ class MainActivity : AppCompatActivity() {
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            // ไม่เพิ่ม padding bottom เพื่อให้ bottom nav ชิดขอบล่างของระบบ
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, 0)
             insets
         }
@@ -52,6 +51,7 @@ class MainActivity : AppCompatActivity() {
         db = FirebaseFirestore.getInstance()
 
         waterDropView = findViewById(R.id.waterDropView)
+        waterDropView.setPercentageColor(Color.LTGRAY)
 
         cardButtons = listOf(
             findViewById(R.id.cardCoffee), findViewById(R.id.cardTea),
@@ -254,7 +254,8 @@ class MainActivity : AppCompatActivity() {
                         "date" to today,
                         "total_intake_ml" to 0,
                         "goal_ml" to goalMl,
-                        "entries" to listOf<Map<String, Any>>()
+                        "entries" to listOf<Map<String, Any>>(),
+                        "date_string" to today
                     )
 
                     docRef.set(consumptionData)
