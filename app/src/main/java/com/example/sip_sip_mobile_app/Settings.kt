@@ -8,7 +8,6 @@ import android.net.Uri
 import android.os.Bundle
 import android.view.View
 import android.widget.*
-import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -74,12 +73,12 @@ class Settings : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         setContentView(R.layout.activity_settings)
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(bars.left, bars.top, bars.right, bars.bottom)
+            // ปรับ padding ให้สม่ำเสมอ โดยเฉพาะด้านล่างที่อาจจะโดนระบบดึงพื้นที่ไป
+            v.setPadding(bars.left, bars.top, bars.right, 0) 
             insets
         }
 
@@ -93,7 +92,6 @@ class Settings : AppCompatActivity() {
 
         setEditable(false)
 
-        // --- ส่วนเลือกรูปภาพ (ทำงานเหมือนเดิม) ---
         imgAvatar.setOnClickListener {
             if (!imgAvatar.isEnabled) return@setOnClickListener
             val intent = Intent(Intent.ACTION_PICK).apply { type = "image/*" }
@@ -150,8 +148,6 @@ class Settings : AppCompatActivity() {
         btnBack = findViewById(R.id.btnBack)
     }
 
-    // ================= SweetAlert Logic (ปรับปรุงปุ่มเขียว/แดง มนๆ) =================
-
     private fun confirmSaveProfile() {
         if (etActivityEdit.text.isEmpty() || etWeight.text.isEmpty() ||
             etStartTime.text.isEmpty() || etEndTime.text.isEmpty()) {
@@ -167,7 +163,7 @@ class Settings : AppCompatActivity() {
         pDialog.showCancelButton(true)
 
         pDialog.setConfirmClickListener { sDialog ->
-            saveProfile() // ฟังก์ชันบันทึกข้อมูล (รวมถึงรูปภาพ)
+            saveProfile()
 
             sDialog.setTitleText("สำเร็จ!")
                 .setContentText("บันทึกข้อมูลเรียบร้อยแล้ว")
@@ -216,8 +212,6 @@ class Settings : AppCompatActivity() {
         }
     }
 
-    // ================= Profile & Image Logic (Refactored) =================
-
     private fun saveProfile() {
         val uid = auth.currentUser?.uid ?: return
 
@@ -240,7 +234,6 @@ class Settings : AppCompatActivity() {
             "notify" to switchNotify.isChecked
         )
 
-        // Update consumption goal
         val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
         db.collection("consumptions").document("${uid}_$today").update("goal_ml", goalMl)
 
@@ -275,7 +268,7 @@ class Settings : AppCompatActivity() {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == PICK_IMAGE && resultCode == Activity.RESULT_OK) {
             imageUri = data?.data
-            imgAvatar.setImageURI(imageUri) // แสดงรูปที่เลือกทันที
+            imgAvatar.setImageURI(imageUri)
         }
     }
 
@@ -390,5 +383,32 @@ class Settings : AppCompatActivity() {
         intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         startActivity(intent)
         finish()
+    }
+
+    // Helper functions for calculation
+    private fun calculateDailyWater(weight: Double, gender: MainActivity.Gender, activityLevel: MainActivity.ActivityLevel): Int {
+        val baseIntake = weight * 30
+        val activityBonus = when (activityLevel) {
+            MainActivity.ActivityLevel.SEDENTARY -> 0
+            MainActivity.ActivityLevel.LIGHT -> 250
+            MainActivity.ActivityLevel.MODERATE -> 500
+            MainActivity.ActivityLevel.ACTIVE -> 750
+        }
+        val genderBonus = if (gender == MainActivity.Gender.MALE) 250 else 0
+        return (baseIntake + activityBonus + genderBonus).toInt()
+    }
+
+    private fun mapGender(genderStr: String): MainActivity.Gender = when(genderStr) {
+        "ชาย" -> MainActivity.Gender.MALE
+        "หญิง" -> MainActivity.Gender.FEMALE
+        else -> MainActivity.Gender.FEMALE
+    }
+
+    private fun mapActivityLevel(activityStr: String): MainActivity.ActivityLevel = when(activityStr) {
+        "ไม่ออกกำลังกาย" -> MainActivity.ActivityLevel.SEDENTARY
+        "เล็กน้อย" -> MainActivity.ActivityLevel.LIGHT
+        "ปานกลาง" -> MainActivity.ActivityLevel.MODERATE
+        "หนัก" -> MainActivity.ActivityLevel.ACTIVE
+        else -> MainActivity.ActivityLevel.SEDENTARY
     }
 }

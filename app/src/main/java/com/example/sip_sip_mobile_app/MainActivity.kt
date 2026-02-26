@@ -6,7 +6,6 @@ import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
-import android.widget.Button
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -45,7 +44,8 @@ class MainActivity : AppCompatActivity() {
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+            // ไม่เพิ่ม padding bottom เพื่อให้ bottom nav ชิดขอบล่างของระบบ
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, 0)
             insets
         }
 
@@ -65,6 +65,11 @@ class MainActivity : AppCompatActivity() {
         loadUserProfile()
         loadTodayIntake()
         setupIntakeButtons()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        loadUserProfile()
     }
 
     private fun setupIntakeButtons() {
@@ -234,7 +239,6 @@ class MainActivity : AppCompatActivity() {
                     layoutRecentEntries.addView(entryView)
                 }
             } else {
-                // Document does not exist for today, create it
                 db.collection("users").document(user.uid).get().addOnSuccessListener { userDoc ->
                     val goalMl = if (userDoc != null && userDoc.exists()) {
                         val weight = userDoc.getDouble("weight") ?: 70.0
@@ -242,7 +246,7 @@ class MainActivity : AppCompatActivity() {
                         val activityStr = userDoc.getString("activity") ?: "ไม่ออกกำลังกาย"
                         calculateDailyWater(weight, mapGender(genderStr), mapActivityLevel(activityStr))
                     } else {
-                        2000 // Fallback
+                        2000
                     }
 
                     val consumptionData = hashMapOf(
@@ -266,23 +270,20 @@ class MainActivity : AppCompatActivity() {
             .addOnSuccessListener { document ->
                 if (document != null && document.exists()) {
                     val name = document.getString("name") ?: "User"
-                    val photoUrl = document.getString("photoUrl")
+                    val photoUrl = document.getString("avatarUrl")
                     findViewById<TextView>(R.id.tvUsername).text = name
                     if (!photoUrl.isNullOrEmpty()) {
                         Glide.with(this).load(photoUrl).circleCrop().into(findViewById(R.id.imgAvatar))
+                    } else {
+                        // Optional: Reset to default avatar if photoUrl is null or empty
+                        findViewById<ImageView>(R.id.imgAvatar).setImageResource(R.drawable.profile)
                     }
-                } else {
-                    Log.d("SipSip", "No such document")
                 }
-            }
-            .addOnFailureListener { exception ->
-                Log.d("SipSip", "get failed with ", exception)
             }
     }
 
-    // Helper functions for calculating water intake - you might need to adjust these
     private fun calculateDailyWater(weight: Double, gender: Gender, activityLevel: ActivityLevel): Int {
-        val baseIntake = weight * 30 // A common formula
+        val baseIntake = weight * 30
         val activityBonus = when (activityLevel) {
             ActivityLevel.SEDENTARY -> 0
             ActivityLevel.LIGHT -> 250
@@ -301,9 +302,9 @@ class MainActivity : AppCompatActivity() {
 
     private fun mapActivityLevel(activityStr: String): ActivityLevel = when(activityStr) {
         "ไม่ออกกำลังกาย" -> ActivityLevel.SEDENTARY
-        "ออกกำลังกายเบาๆ" -> ActivityLevel.LIGHT
-        "ออกกำลังกายปานกลาง" -> ActivityLevel.MODERATE
-        "ออกกำลังกายหนัก" -> ActivityLevel.ACTIVE
+        "เล็กน้อย" -> ActivityLevel.LIGHT
+        "ปานกลาง" -> ActivityLevel.MODERATE
+        "หนัก" -> ActivityLevel.ACTIVE
         else -> ActivityLevel.SEDENTARY
     }
 

@@ -8,6 +8,8 @@ import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import cn.pedant.SweetAlert.SweetAlertDialog
 import com.airbnb.lottie.LottieAnimationView
 import com.airbnb.lottie.LottieProperty
@@ -32,6 +34,12 @@ class Planting : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_planting)
 
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, 0)
+            insets
+        }
+
         auth = FirebaseAuth.getInstance()
         db = FirebaseFirestore.getInstance()
 
@@ -44,9 +52,7 @@ class Planting : AppCompatActivity() {
         val cardWaterAction = findViewById<View>(R.id.cardWaterAction)
         findViewById<TextView>(R.id.btnBack).setOnClickListener { finish() }
 
-        // ดึงข้อมูลจากคอลเลกชัน plants แทน users
         listenToPlantData()
-
         cardWaterAction.setOnClickListener { handleWatering() }
 
         val bottomNavView = findViewById<View>(R.id.layout_bottom_nav)
@@ -55,34 +61,22 @@ class Planting : AppCompatActivity() {
 
     private fun listenToPlantData() {
         val uid = auth.currentUser?.uid ?: return
-
-        // ค้นหาข้อมูลในคอลเลกชัน plants ที่มี user_id ตรงกับคนล็อกอิน
         db.collection("plants")
             .whereEqualTo("user_id", uid)
             .addSnapshotListener { snapshots, e ->
                 if (e != null || snapshots == null) return@addSnapshotListener
-
                 if (!snapshots.isEmpty) {
                     val doc = snapshots.documents[0]
-
-                    // ดึงค่าตามชื่อฟิลด์ใหม่ในฐานข้อมูล
                     val currentWaterLevel = doc.getLong("current_water_level")?.toInt() ?: 0
                     val wateringCans = doc.getLong("watering_cans_count")?.toInt() ?: 0
                     val growthStage = doc.getLong("growth_stage")?.toInt() ?: 1
                     val lastUpdated = doc.getTimestamp("last_updated")?.toDate() ?: Date()
 
-                    // เนื่องจากระบบ "ไฟ (Streak)" ยังอยู่ที่คอลเลกชัน users
-                    // เราจะไปดึง streak แยกมาแสดงผล
                     fetchUserStreak(uid)
-
-                    // อัปเดต UI
                     tvCount.text = currentWaterLevel.toString()
                     tvWaterAmount.text = wateringCans.toString()
-
-                    // ตรวจสุขภาพต้นไม้
                     checkTreeHealth(currentWaterLevel, lastUpdated, growthStage)
                 } else {
-                    // ถ้ายังไม่มีข้อมูลใน plants ให้สร้างขึ้นใหม่
                     createNewPlantEntry(uid)
                 }
             }
@@ -121,10 +115,7 @@ class Planting : AppCompatActivity() {
 
     private fun checkTreeHealth(currentWater: Int, lastUpdated: Date, stage: Int) {
         val diffInHours = (Date().time - lastUpdated.time) / (1000 * 60 * 60)
-
-        // เลือก Animation ตาม Growth Stage
         lottieTree.setAnimation(if (stage < 2) "sprout.json" else "tree.json")
-
         when {
             diffInHours >= 48 -> {
                 applyTreeFilter("#8B4513")
@@ -145,10 +136,8 @@ class Planting : AppCompatActivity() {
 
     private fun handleWatering() {
         val uid = auth.currentUser?.uid ?: return
-
         db.collection("plants").whereEqualTo("user_id", uid).get().addOnSuccessListener { snapshots ->
             if (snapshots.isEmpty) return@addOnSuccessListener
-
             val doc = snapshots.documents[0]
             val docId = doc.id
             val currentBuckets = doc.getLong("watering_cans_count")?.toInt() ?: 0
@@ -160,12 +149,7 @@ class Planting : AppCompatActivity() {
                     "watering_cans_count" to FieldValue.increment(-1),
                     "last_updated" to FieldValue.serverTimestamp()
                 )
-
-                // ตรวจสอบว่าต้องเลื่อน Stage หรือยัง (เช่น รดน้ำครบ 50 ครั้ง)
-                if (currentLevel + 1 >= 50) {
-                    updates["growth_stage"] = FieldValue.increment(1)
-                }
-
+                if (currentLevel + 1 >= 50) updates["growth_stage"] = FieldValue.increment(1)
                 db.collection("plants").document(docId).update(updates).addOnSuccessListener {
                     val pDialog = SweetAlertDialog(this, SweetAlertDialog.SUCCESS_TYPE)
                     pDialog.titleText = "รดน้ำเรียบร้อย!"

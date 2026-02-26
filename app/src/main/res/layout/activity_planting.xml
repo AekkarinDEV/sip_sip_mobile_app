@@ -9,8 +9,9 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:padding="24dp"
-        android:layout_above="@+id/layout_bottom_nav">
+        android:paddingHorizontal="24dp"
+        android:paddingTop="24dp"
+        android:paddingBottom="100dp">
 
         <TextView
             android:id="@+id/btnBack"

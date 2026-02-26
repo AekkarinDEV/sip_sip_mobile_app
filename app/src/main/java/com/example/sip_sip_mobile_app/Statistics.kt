@@ -8,6 +8,8 @@ import android.widget.ImageButton
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.graphics.toColorInt
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import com.github.mikephil.charting.charts.BarChart
 import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.data.BarData
@@ -19,7 +21,9 @@ import com.google.firebase.firestore.FirebaseFirestore
 import java.text.SimpleDateFormat
 import java.util.*
 
-enum class StatPeriod { WEEK, MONTH, YEAR }
+enum class StatPeriod {
+    WEEK, MONTH, YEAR
+}
 
 class Statistics : AppCompatActivity() {
 
@@ -42,6 +46,12 @@ class Statistics : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_statistics)
 
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.statisticsMain)) { v, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            v.setPadding(bars.left, bars.top, bars.right, 0)
+            insets
+        }
+
         auth = FirebaseAuth.getInstance()
         db = FirebaseFirestore.getInstance()
 
@@ -58,15 +68,10 @@ class Statistics : AppCompatActivity() {
         updateUI()
 
         findViewById<TextView>(R.id.btnBack).setOnClickListener { finish() }
-        Log.d("USER_CHECK", "User UID = ${auth.currentUser?.uid}")
 
         val bottomNavView = findViewById<View>(R.id.layout_bottom_nav)
         BottomNavManager(this, bottomNavView).setupBottomNavigation()
     }
-
-    // -------------------------
-    // UI SETUP
-    // -------------------------
 
     private fun setupTabs() {
         findViewById<Button>(R.id.btnWeek).setOnClickListener {
@@ -122,14 +127,8 @@ class Statistics : AppCompatActivity() {
         tvPeriod.text = sdf.format(calendar.time)
     }
 
-    // -------------------------
-    // PERIOD DATA (ไม่ใช้ where)
-    // -------------------------
-
     private fun loadPeriodData() {
-
         val user = auth.currentUser ?: return
-
         val (start, end, labels) = when (currentPeriod) {
             StatPeriod.WEEK -> getWeekRange()
             StatPeriod.MONTH -> getMonthRange()
@@ -137,7 +136,6 @@ class Statistics : AppCompatActivity() {
         }
 
         val entries = MutableList(labels.size) { 0f }
-
         var total = 0f
         var best = 0f
         var count = 0
@@ -147,131 +145,77 @@ class Statistics : AppCompatActivity() {
         var index = 0
 
         while (!tempCal.after(end)) {
-
-            val currentIndex = index  // 🔥 สำคัญมาก
+            val currentIndex = index
             val dateString = dateFormat.format(tempCal.time)
             val docId = "${user.uid}_$dateString"
 
-            db.collection("consumptions")
-                .document(docId)
-                .get()
+            db.collection("consumptions").document(docId).get()
                 .addOnSuccessListener { document ->
-
                     val intake = document.getLong("total_intake_ml")?.toFloat() ?: 0f
-
                     if (currentIndex < entries.size) {
                         entries[currentIndex] = intake / 1000f
                     }
-
                     if (intake > 0) {
                         total += intake
                         if (intake > best) best = intake
                         count++
                     }
-
                     loaded++
-
                     if (loaded == labels.size) {
-
-                        val barEntries = entries.mapIndexed { i, value ->
-                            BarEntry(i.toFloat(), value)
-                        }
-
+                        val barEntries = entries.mapIndexed { i, value -> BarEntry(i.toFloat(), value) }
                         setupChart(barEntries, labels)
                         updateSummary(total, best, count)
                     }
                 }
-
             tempCal.add(Calendar.DATE, 1)
             index++
         }
     }
 
-
-    // -------------------------
-    // CHART
-    // -------------------------
-
     private fun setupChart(entries: List<BarEntry>, labels: List<String>) {
-
         val dataSet = BarDataSet(entries, "")
         dataSet.color = "#5DADE2".toColorInt()
         dataSet.valueTextSize = 10f
-
         barChart.data = BarData(dataSet)
-
         barChart.description.isEnabled = false
         barChart.legend.isEnabled = false
-        barChart.setNoDataText("")
-
         barChart.xAxis.apply {
             valueFormatter = IndexAxisValueFormatter(labels)
             position = XAxis.XAxisPosition.BOTTOM
             setDrawGridLines(false)
             granularity = 1f
         }
-
         barChart.axisLeft.axisMinimum = 0f
         barChart.axisRight.isEnabled = false
-
         barChart.animateY(800)
         barChart.invalidate()
     }
 
     private fun updateSummary(total: Float, best: Float, count: Int) {
         tvTotal.text = String.format("%.2f L", total / 1000f)
-        tvAverage.text =
-            if (count > 0)
-                String.format("%.2f L", (total / count) / 1000f)
-            else "0.00 L"
+        tvAverage.text = if (count > 0) String.format("%.2f L", (total / count) / 1000f) else "0.00 L"
         tvBest.text = String.format("%.2f L", best / 1000f)
     }
 
-    // -------------------------
-    // OVERALL SUMMARY
-    // -------------------------
-
     private fun loadOverallSummary() {
         val user = auth.currentUser ?: return
-
-        // เปลี่ยนจาก .get().addOnSuccessListener เป็น .addSnapshotListener
-        db.collection("consumptions")
-            .whereEqualTo("user_id", user.uid)
+        db.collection("consumptions").whereEqualTo("user_id", user.uid)
             .addSnapshotListener { documents, e ->
-                if (e != null) {
-                    Log.e("Statistics", "Listen failed.", e)
-                    return@addSnapshotListener
-                }
-
-                if (documents != null) {
-                    var totalAll = 0f
-                    var days = 0
-
-                    for (doc in documents) {
-                        val intake = doc.getLong("total_intake_ml")?.toFloat() ?: 0f
-                        if (intake > 0) {
-                            totalAll += intake
-                            days++
-                        }
+                if (e != null || documents == null) return@addSnapshotListener
+                var totalAll = 0f
+                var days = 0
+                for (doc in documents) {
+                    val intake = doc.getLong("total_intake_ml")?.toFloat() ?: 0f
+                    if (intake > 0) {
+                        totalAll += intake
+                        days++
                     }
-
-                    val avg = if (days > 0) totalAll / days else 0f
-
-                    // อัพเดต UI ทันทีเมื่อข้อมูลใน Firebase เปลี่ยน
-                    tvOverallAverage.text = String.format("%.2f L", avg / 1000f)
-                    tvOverallTotal.text = String.format("%.2f L", totalAll / 1000f)
-
-                    Log.d("Statistics", "Real-time Update: Total=$totalAll")
                 }
+                val avg = if (days > 0) totalAll / days else 0f
+                tvOverallAverage.text = String.format("%.2f L", avg / 1000f)
+                tvOverallTotal.text = String.format("%.2f L", totalAll / 1000f)
             }
     }
-
-
-
-
-    // -------------------------
-    // DATE RANGES
-    // -------------------------
 
     private fun getWeekRange(): Triple<Calendar, Calendar, List<String>> {
         val start = calendar.clone() as Calendar
@@ -295,10 +239,7 @@ class Statistics : AppCompatActivity() {
         start.set(Calendar.DAY_OF_YEAR, 1)
         val end = start.clone() as Calendar
         end.set(Calendar.DAY_OF_YEAR, end.getActualMaximum(Calendar.DAY_OF_YEAR))
-        val labels = listOf(
-            "ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.",
-            "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."
-        )
+        val labels = listOf("ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค.")
         return Triple(start, end, labels)
     }
 }
