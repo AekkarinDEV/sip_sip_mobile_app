@@ -33,6 +33,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var db: FirebaseFirestore
     private lateinit var cardButtons: List<CardView>
     private lateinit var waterDropView: WaterDropView
+    private var isTutorialStarted = false // เพิ่ม flag กันการเรียกซ้อน
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -66,77 +67,82 @@ class MainActivity : AppCompatActivity() {
         BottomNavManager(this, bottomNavView).setupBottomNavigation()
 
         loadUserProfile()
-        loadTodayIntake()
+        loadTodayIntake() // Tutorial จะถูกเรียกจากข้างในนี้หลังจากโหลดข้อมูลเสร็จ
         setupIntakeButtons()
-
-        // เริ่มต้นการสอนใช้งาน (Tutorial) สำหรับผู้ใช้ใหม่
-        showTutorialIfNeeded()
     }
 
     private fun showTutorialIfNeeded() {
+        if (isTutorialStarted) return // ถ้าเริ่มไปแล้วไม่ต้องเริ่มใหม่
+        
         val sharedPref = getSharedPreferences("SipSipPrefs", Context.MODE_PRIVATE)
         val isTutorialDone = sharedPref.getBoolean("is_main_tutorial_done", false)
 
         if (!isTutorialDone) {
-            val sequence = TapTargetSequence(this)
-                .targets(
-                    TapTarget.forView(findViewById(R.id.layoutProgressText), "(1/5) เป้าหมายวันนี้", "ดูปริมาณน้ำที่คุณดื่มไปแล้วเทียบกับเป้าหมายรายวันของคุณได้ที่นี่")
-                        .outerCircleColor(R.color.blue_light)
-                        .targetCircleColor(R.color.white)
-                        .titleTextSize(22)
-                        .descriptionTextSize(16)
-                        .cancelable(false)
-                        .tintTarget(true)
-                        .transparentTarget(true),
-
-                    TapTarget.forView(findViewById(R.id.waterDropView), "(2/5) สถานะปัจจุบัน", "วงกลมน้ำนี้จะบอกเปอร์เซ็นต์ความก้าวหน้า ยิ่งดื่มเยอะ น้ำยิ่งเต็มวงกลม!")
-                        .outerCircleColor(R.color.blue_light)
-                        .targetCircleColor(R.color.white)
-                        .titleTextSize(22)
-                        .descriptionTextSize(16)
-                        .cancelable(false)
-                        .tintTarget(true)
-                        .transparentTarget(true)
-                        .targetRadius(80),
-                    
-                    TapTarget.forView(findViewById(R.id.cardCoffee), "(3/5) บันทึกง่ายๆ", "เลือกขนาดแก้วน้ำที่คุณดื่มเพื่อบันทึกข้อมูลได้ทันที รวดเร็วและสะดวกมาก")
-                        .outerCircleColor(R.color.blue_light)
-                        .targetCircleColor(R.color.white)
-                        .titleTextSize(22)
-                        .descriptionTextSize(16)
-                        .cancelable(false)
-                        .tintTarget(true)
-                        .transparentTarget(true),
-
-                    TapTarget.forView(findViewById(R.id.layoutRecentEntries), "(4/5) ประวัติการดื่ม", "ตรวจสอบรายการน้ำที่คุณเพิ่งดื่มไปในวันนี้ได้จากส่วนนี้")
-                        .outerCircleColor(R.color.blue_light)
-                        .targetCircleColor(R.color.white)
-                        .titleTextSize(22)
-                        .descriptionTextSize(16)
-                        .cancelable(false)
-                        .tintTarget(true)
-                        .transparentTarget(true)
-                        .targetRadius(100),
-
-                    TapTarget.forView(findViewById(R.id.layout_bottom_nav), "(5/5) เมนูเมนูหลัก", "สลับไปดูสถิติ รดน้ำต้นไม้ หรือตั้งค่าโปรไฟล์ส่วนตัวได้ที่แถบเมนูด้านล่าง")
-                        .outerCircleColor(R.color.blue_light)
-                        .targetCircleColor(R.color.white)
-                        .titleTextSize(22)
-                        .descriptionTextSize(16)
-                        .cancelable(false)
-                        .tintTarget(true)
-                        .transparentTarget(true)
-                        .targetRadius(100)
-                )
-                .listener(object : TapTargetSequence.Listener {
-                    override fun onSequenceFinish() {
-                        sharedPref.edit().putBoolean("is_main_tutorial_done", true).apply()
-                    }
-                    override fun onSequenceStep(lastTarget: TapTarget?, targetClicked: Boolean) {}
-                    override fun onSequenceCanceled(lastTarget: TapTarget?) {}
-                })
+            isTutorialStarted = true
             
-            sequence.start()
+            // ใช้ postDelayed เพื่อรอให้ UI มั่นใจว่าวาดตัวเลขล่าสุดเสร็จแล้วจริงๆ
+            findViewById<View>(R.id.main).postDelayed({
+                val sequence = TapTargetSequence(this)
+                    .targets(
+                        TapTarget.forView(findViewById(R.id.layoutProgressText), "(1/5) เป้าหมายวันนี้", "ดูปริมาณน้ำที่คุณดื่มไปแล้วเทียบกับเป้าหมายรายวันของคุณได้ที่นี่")
+                            .outerCircleColor(R.color.blue_light)
+                            .targetCircleColor(R.color.white)
+                            .titleTextSize(22)
+                            .descriptionTextSize(16)
+                            .cancelable(false)
+                            .tintTarget(false)
+                            .transparentTarget(true)
+                            .targetRadius(60), // เพิ่มรัศมีให้คลุมตัวหนังสือพอดี
+
+                        TapTarget.forView(findViewById(R.id.waterDropView), "(2/5) สถานะปัจจุบัน", "วงกลมน้ำนี้จะบอกเปอร์เซ็นต์ความก้าวหน้า ยิ่งดื่มเยอะ น้ำยิ่งเต็มวงกลม!")
+                            .outerCircleColor(R.color.blue_light)
+                            .targetCircleColor(R.color.white)
+                            .titleTextSize(22)
+                            .descriptionTextSize(16)
+                            .cancelable(false)
+                            .tintTarget(false)
+                            .transparentTarget(true)
+                            .targetRadius(80),
+                        
+                        TapTarget.forView(findViewById(R.id.cardCoffee), "(3/5) บันทึกง่ายๆ", "เลือกขนาดแก้วน้ำที่คุณดื่มเพื่อบันทึกข้อมูลได้ทันที รวดเร็วและสะดวกมาก")
+                            .outerCircleColor(R.color.blue_light)
+                            .targetCircleColor(R.color.white)
+                            .titleTextSize(22)
+                            .descriptionTextSize(16)
+                            .cancelable(false)
+                            .tintTarget(false)
+                            .transparentTarget(true),
+
+                        TapTarget.forView(findViewById(R.id.layoutRecentEntries), "(4/5) ประวัติการดื่ม", "ตรวจสอบรายการน้ำที่คุณเพิ่งดื่มไปในวันนี้ได้จากส่วนนี้")
+                            .outerCircleColor(R.color.blue_light)
+                            .targetCircleColor(R.color.white)
+                            .titleTextSize(22)
+                            .descriptionTextSize(16)
+                            .cancelable(false)
+                            .tintTarget(false)
+                            .transparentTarget(true)
+                            .targetRadius(100),
+
+                        TapTarget.forView(findViewById(R.id.layout_bottom_nav), "(5/5) เมนูเมนูหลัก", "สลับไปดูสถิติ รดน้ำต้นไม้ หรือตั้งค่าโปรไฟล์ส่วนตัวได้ที่แถบเมนูด้านล่าง")
+                            .outerCircleColor(R.color.blue_light)
+                            .targetCircleColor(R.color.white)
+                            .titleTextSize(22)
+                            .descriptionTextSize(16)
+                            .cancelable(false)
+                            .tintTarget(false)
+                            .transparentTarget(true)
+                            .targetRadius(100)
+                    )
+                    .listener(object : TapTargetSequence.Listener {
+                        override fun onSequenceFinish() {
+                            sharedPref.edit().putBoolean("is_main_tutorial_done", true).apply()
+                        }
+                        override fun onSequenceStep(lastTarget: TapTarget?, targetClicked: Boolean) {}
+                        override fun onSequenceCanceled(lastTarget: TapTarget?) {}
+                    })
+                
+                sequence.start()
+            }, 500) // หน่วงเวลาครึ่งวินาทีเพื่อให้ Firebase ข้อมูลนิ่ง
         }
     }
 
@@ -311,25 +317,31 @@ class MainActivity : AppCompatActivity() {
                     }
                     layoutRecentEntries.addView(entryView)
                 }
+                
+                // หลังจากโหลดข้อมูลวันนี้เสร็จแล้ว ค่อยเรียก Tutorial
+                showTutorialIfNeeded()
+                
             } else {
                 db.collection("users").document(user.uid).get().addOnSuccessListener { userDoc ->
                     val goalMl = if (userDoc != null && userDoc.exists()) {
                         val weight = userDoc.getDouble("weight") ?: 70.0
-                        val genderStr = userDoc.getString("gender") ?: "ชาย"
-                        val activityStr = userDoc.getString("activity") ?: "ไม่ออกกำลังกาย"
-                        calculateDailyWater(weight, mapGender(genderStr), mapActivityLevel(activityStr))
+                        (weight * 35).toLong()
                     } else {
-                        2000
+                        2000L
                     }
 
-                    val consumptionData = hashMapOf(
+                    val initialData = hashMapOf(
                         "user_id" to user.uid,
                         "date" to today,
-                        "total_intake_ml" to 0,
+                        "total_intake_ml" to 0L,
                         "goal_ml" to goalMl,
                         "entries" to listOf<Map<String, Any>>()
                     )
-                    db.collection("consumptions").document("${user.uid}_$today").set(consumptionData)
+                    db.collection("consumptions").document("${user.uid}_$today").set(initialData)
+                        .addOnSuccessListener {
+                            // กรณีสร้างข้อมูลใหม่เสร็จ ก็เรียก Tutorial เช่นกัน
+                            showTutorialIfNeeded()
+                        }
                 }
             }
         }
@@ -337,30 +349,15 @@ class MainActivity : AppCompatActivity() {
 
     private fun loadUserProfile() {
         val user = auth.currentUser ?: return
-        db.collection("users").document(user.uid).get().addOnSuccessListener { document ->
-            if (document != null && document.exists()) {
-                findViewById<TextView>(R.id.tvUsername).text = document.getString("username")
-                val avatarUrl = document.getString("avatarUrl")
-                if (!avatarUrl.isNullOrEmpty()) {
-                    Glide.with(this).load(avatarUrl).into(findViewById<ImageView>(R.id.imgAvatar))
+        db.collection("users").document(user.uid).get()
+            .addOnSuccessListener { document ->
+                if (document != null && document.exists()) {
+                    findViewById<TextView>(R.id.tvUsername).text = document.getString("username") ?: "User"
+                    val profileImageUrl = document.getString("profileImageUrl")
+                    if (!profileImageUrl.isNullOrEmpty()) {
+                        Glide.with(this).load(profileImageUrl).into(findViewById<ImageView>(R.id.imgAvatar))
+                    }
                 }
             }
-        }
-    }
-
-    private fun calculateDailyWater(weight: Double, gender: Int, activityLevel: Int): Int {
-        val baseWater = weight * 30
-        val genderBonus = if (gender == 1) 500 else 0
-        val activityBonus = activityLevel * 400
-        return (baseWater + genderBonus + activityBonus).toInt()
-    }
-
-    private fun mapGender(gender: String): Int = if (gender == "ชาย") 1 else 0
-    private fun mapActivityLevel(activity: String): Int {
-        return when (activity) {
-            "ออกกำลังกายเบาๆ" -> 1
-            "ออกกำลังกายหนัก" -> 2
-            else -> 0
-        }
     }
 }

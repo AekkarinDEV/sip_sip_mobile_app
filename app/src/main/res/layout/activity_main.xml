@@ -103,10 +103,11 @@
                         android:id="@+id/tvCurrentAmount"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="0"
+                        android:text=""
                         android:textColor="#C9A44C"
                         android:textSize="26sp"
-                        android:textStyle="bold" />
+                        android:textStyle="bold"
+                        tools:text="1200" />
 
                     <TextView
                         android:id="@+id/tvGoal"
@@ -114,10 +115,11 @@
                         android:layout_height="wrap_content"
                         android:layout_marginStart="4dp"
                         android:layout_marginBottom="2dp"
-                        android:text=" / 2000 ml"
+                        android:text=""
                         android:textColor="#333333"
                         android:textSize="18sp"
-                        android:textStyle="bold" />
+                        android:textStyle="bold"
+                        tools:text=" / 2000 ml" />
                 </LinearLayout>
             </androidx.constraintlayout.widget.ConstraintLayout>
 
