@@ -1,5 +1,6 @@
 package com.example.sip_sip_mobile_app
 
+import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
@@ -16,6 +17,9 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import cn.pedant.SweetAlert.SweetAlertDialog
 import com.bumptech.glide.Glide
+import com.getkeepsafe.taptargetview.TapTarget
+import com.getkeepsafe.taptargetview.TapTargetSequence
+import com.getkeepsafe.taptargetview.TapTargetView
 import com.google.android.material.slider.Slider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
@@ -51,7 +55,6 @@ class MainActivity : AppCompatActivity() {
         db = FirebaseFirestore.getInstance()
 
         waterDropView = findViewById(R.id.waterDropView)
-        waterDropView.setPercentageColor(Color.LTGRAY)
 
         cardButtons = listOf(
             findViewById(R.id.cardCoffee), findViewById(R.id.cardTea),
@@ -65,6 +68,76 @@ class MainActivity : AppCompatActivity() {
         loadUserProfile()
         loadTodayIntake()
         setupIntakeButtons()
+
+        // เริ่มต้นการสอนใช้งาน (Tutorial) สำหรับผู้ใช้ใหม่
+        showTutorialIfNeeded()
+    }
+
+    private fun showTutorialIfNeeded() {
+        val sharedPref = getSharedPreferences("SipSipPrefs", Context.MODE_PRIVATE)
+        val isTutorialDone = sharedPref.getBoolean("is_main_tutorial_done", false)
+
+        if (!isTutorialDone) {
+            val sequence = TapTargetSequence(this)
+                .targets(
+                    TapTarget.forView(findViewById(R.id.layoutProgressText), "(1/5) เป้าหมายวันนี้", "ดูปริมาณน้ำที่คุณดื่มไปแล้วเทียบกับเป้าหมายรายวันของคุณได้ที่นี่")
+                        .outerCircleColor(R.color.blue_light)
+                        .targetCircleColor(R.color.white)
+                        .titleTextSize(22)
+                        .descriptionTextSize(16)
+                        .cancelable(false)
+                        .tintTarget(true)
+                        .transparentTarget(true),
+
+                    TapTarget.forView(findViewById(R.id.waterDropView), "(2/5) สถานะปัจจุบัน", "วงกลมน้ำนี้จะบอกเปอร์เซ็นต์ความก้าวหน้า ยิ่งดื่มเยอะ น้ำยิ่งเต็มวงกลม!")
+                        .outerCircleColor(R.color.blue_light)
+                        .targetCircleColor(R.color.white)
+                        .titleTextSize(22)
+                        .descriptionTextSize(16)
+                        .cancelable(false)
+                        .tintTarget(true)
+                        .transparentTarget(true)
+                        .targetRadius(80),
+                    
+                    TapTarget.forView(findViewById(R.id.cardCoffee), "(3/5) บันทึกง่ายๆ", "เลือกขนาดแก้วน้ำที่คุณดื่มเพื่อบันทึกข้อมูลได้ทันที รวดเร็วและสะดวกมาก")
+                        .outerCircleColor(R.color.blue_light)
+                        .targetCircleColor(R.color.white)
+                        .titleTextSize(22)
+                        .descriptionTextSize(16)
+                        .cancelable(false)
+                        .tintTarget(true)
+                        .transparentTarget(true),
+
+                    TapTarget.forView(findViewById(R.id.layoutRecentEntries), "(4/5) ประวัติการดื่ม", "ตรวจสอบรายการน้ำที่คุณเพิ่งดื่มไปในวันนี้ได้จากส่วนนี้")
+                        .outerCircleColor(R.color.blue_light)
+                        .targetCircleColor(R.color.white)
+                        .titleTextSize(22)
+                        .descriptionTextSize(16)
+                        .cancelable(false)
+                        .tintTarget(true)
+                        .transparentTarget(true)
+                        .targetRadius(100),
+
+                    TapTarget.forView(findViewById(R.id.layout_bottom_nav), "(5/5) เมนูเมนูหลัก", "สลับไปดูสถิติ รดน้ำต้นไม้ หรือตั้งค่าโปรไฟล์ส่วนตัวได้ที่แถบเมนูด้านล่าง")
+                        .outerCircleColor(R.color.blue_light)
+                        .targetCircleColor(R.color.white)
+                        .titleTextSize(22)
+                        .descriptionTextSize(16)
+                        .cancelable(false)
+                        .tintTarget(true)
+                        .transparentTarget(true)
+                        .targetRadius(100)
+                )
+                .listener(object : TapTargetSequence.Listener {
+                    override fun onSequenceFinish() {
+                        sharedPref.edit().putBoolean("is_main_tutorial_done", true).apply()
+                    }
+                    override fun onSequenceStep(lastTarget: TapTarget?, targetClicked: Boolean) {}
+                    override fun onSequenceCanceled(lastTarget: TapTarget?) {}
+                })
+            
+            sequence.start()
+        }
     }
 
     override fun onResume() {
@@ -254,12 +327,9 @@ class MainActivity : AppCompatActivity() {
                         "date" to today,
                         "total_intake_ml" to 0,
                         "goal_ml" to goalMl,
-                        "entries" to listOf<Map<String, Any>>(),
-                        "date_string" to today
+                        "entries" to listOf<Map<String, Any>>()
                     )
-
-                    docRef.set(consumptionData)
-                        .addOnFailureListener { e -> Log.e("SipSipError", "Failed to create today's consumption document: ${e.message}") }
+                    db.collection("consumptions").document("${user.uid}_$today").set(consumptionData)
                 }
             }
         }
@@ -267,48 +337,30 @@ class MainActivity : AppCompatActivity() {
 
     private fun loadUserProfile() {
         val user = auth.currentUser ?: return
-        db.collection("users").document(user.uid).get()
-            .addOnSuccessListener { document ->
-                if (document != null && document.exists()) {
-                    val name = document.getString("name") ?: "User"
-                    val photoUrl = document.getString("avatarUrl")
-                    findViewById<TextView>(R.id.tvUsername).text = name
-                    if (!photoUrl.isNullOrEmpty()) {
-                        Glide.with(this).load(photoUrl).circleCrop().into(findViewById(R.id.imgAvatar))
-                    } else {
-                        // Optional: Reset to default avatar if photoUrl is null or empty
-                        findViewById<ImageView>(R.id.imgAvatar).setImageResource(R.drawable.profile)
-                    }
+        db.collection("users").document(user.uid).get().addOnSuccessListener { document ->
+            if (document != null && document.exists()) {
+                findViewById<TextView>(R.id.tvUsername).text = document.getString("username")
+                val avatarUrl = document.getString("avatarUrl")
+                if (!avatarUrl.isNullOrEmpty()) {
+                    Glide.with(this).load(avatarUrl).into(findViewById<ImageView>(R.id.imgAvatar))
                 }
             }
-    }
-
-    private fun calculateDailyWater(weight: Double, gender: Gender, activityLevel: ActivityLevel): Int {
-        val baseIntake = weight * 30
-        val activityBonus = when (activityLevel) {
-            ActivityLevel.SEDENTARY -> 0
-            ActivityLevel.LIGHT -> 250
-            ActivityLevel.MODERATE -> 500
-            ActivityLevel.ACTIVE -> 750
         }
-        val genderBonus = if (gender == Gender.MALE) 250 else 0
-        return (baseIntake + activityBonus + genderBonus).toInt()
     }
 
-    private fun mapGender(genderStr: String): Gender = when(genderStr) {
-        "ชาย" -> Gender.MALE
-        "หญิง" -> Gender.FEMALE
-        else -> Gender.FEMALE
+    private fun calculateDailyWater(weight: Double, gender: Int, activityLevel: Int): Int {
+        val baseWater = weight * 30
+        val genderBonus = if (gender == 1) 500 else 0
+        val activityBonus = activityLevel * 400
+        return (baseWater + genderBonus + activityBonus).toInt()
     }
 
-    private fun mapActivityLevel(activityStr: String): ActivityLevel = when(activityStr) {
-        "ไม่ออกกำลังกาย" -> ActivityLevel.SEDENTARY
-        "เล็กน้อย" -> ActivityLevel.LIGHT
-        "ปานกลาง" -> ActivityLevel.MODERATE
-        "หนัก" -> ActivityLevel.ACTIVE
-        else -> ActivityLevel.SEDENTARY
+    private fun mapGender(gender: String): Int = if (gender == "ชาย") 1 else 0
+    private fun mapActivityLevel(activity: String): Int {
+        return when (activity) {
+            "ออกกำลังกายเบาๆ" -> 1
+            "ออกกำลังกายหนัก" -> 2
+            else -> 0
+        }
     }
-
-    enum class Gender { MALE, FEMALE }
-    enum class ActivityLevel { SEDENTARY, LIGHT, MODERATE, ACTIVE }
 }

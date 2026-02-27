@@ -30,7 +30,15 @@ class WaterDropView @JvmOverloads constructor(
         style = Paint.Style.FILL
     }
 
-    private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+    // สีตัวเลขเมื่ออยู่บนพื้นหลังขาว (เหนือน้ำ)
+    private val textPaintDry = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.parseColor("#5FACE0") // primaryBlue
+        textAlign = Paint.Align.CENTER
+        typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+    }
+
+    // สีตัวเลขเมื่ออยู่ในน้ำ
+    private val textPaintWet = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.WHITE
         textAlign = Paint.Align.CENTER
         typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
@@ -68,59 +76,70 @@ class WaterDropView @JvmOverloads constructor(
 
         updateWaterColor(Color.parseColor("#81D4FA"), Color.parseColor("#29B6F6"))
 
-        textPaint.textSize = radius * 0.6f
+        val textSize = radius * 0.5f
+        textPaintDry.textSize = textSize
+        textPaintWet.textSize = textSize
     }
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
 
-        // Draw background circle
+        // 1. วาดพื้นหลังวงกลมสีขาว
         canvas.drawPath(circlePath, circlePaint)
 
-        // Clip to circle for drawing water
+        val textY = viewHeight / 2f - ((textPaintDry.descent() + textPaintDry.ascent()) / 2f)
+        val textStr = "$percentage%"
+
+        // 2. วาดตัวเลขสีฟ้า (จะเห็นได้ชัดบนพื้นหลังขาว)
+        canvas.drawText(textStr, viewWidth / 2f, textY, textPaintDry)
+
+        // 3. เตรียม Wave Path
+        val wavePath = getWavePath()
+
+        // 4. วาดส่วนที่เป็นน้ำและตัวเลขสีขาว (เฉพาะในส่วนที่น้ำท่วมถึง)
         canvas.save()
+        // Clip ให้วาดเฉพาะในวงกลม และ เฉพาะในบริเวณคลื่นน้ำ
         canvas.clipPath(circlePath)
-
-        // Draw water wave
-        drawWave(canvas)
-
-        // Draw percentage text over water
-        val textY = viewHeight / 2f - ((textPaint.descent() + textPaint.ascent()) / 2f)
-        canvas.drawText("$percentage%", viewWidth / 2f, textY, textPaint)
-
+        canvas.clipPath(wavePath)
+        
+        // วาดน้ำ
+        canvas.drawPath(wavePath, waterPaint)
+        
+        // วาดตัวเลขสีขาวทับ (จะเห็นเฉพาะส่วนที่อยู่ในน้ำ)
+        canvas.drawText(textStr, viewWidth / 2f, textY, textPaintWet)
+        
         canvas.restore()
     }
 
-    private fun drawWave(canvas: Canvas) {
+    private fun getWavePath(): Path {
         val waterLevelY = (viewHeight / 2f + radius) - (2 * radius * percentage / 100f)
-        val waveHeight = radius * 0.1f
+        val waveHeight = radius * 0.08f // ปรับความสูงคลื่นให้พอดี
 
-        val wavePath = Path()
-        wavePath.moveTo(0f, viewHeight.toFloat()) // Start from bottom-left
-        wavePath.lineTo(0f, waterLevelY)
+        val path = Path()
+        path.moveTo(-viewWidth.toFloat(), viewHeight * 2f) // เริ่มจากด้านล่าง
+        path.lineTo(-viewWidth.toFloat(), waterLevelY)
 
-        val waveLength = viewWidth / 1.5f
-        var x = 0f
-        while (x < viewWidth) {
+        val waveLength = viewWidth.toFloat()
+        var x = -viewWidth.toFloat()
+        while (x <= viewWidth * 2f) {
             val y = waterLevelY + waveHeight * sin(x / waveLength * 2 * Math.PI.toFloat() + waveOffset)
-            wavePath.lineTo(x, y)
-            x += 20
+            path.lineTo(x, y)
+            x += 10
         }
 
-        wavePath.lineTo(viewWidth.toFloat(), waterLevelY)
-        wavePath.lineTo(viewWidth.toFloat(), viewHeight.toFloat()) // to bottom-right
-        wavePath.close()
-
-        canvas.drawPath(wavePath, waterPaint)
+        path.lineTo(viewWidth * 2f, waterLevelY)
+        path.lineTo(viewWidth * 2f, viewHeight * 2f)
+        path.close()
+        return path
     }
 
     fun setProgress(value: Int) {
         this.percentage = value.coerceIn(0, 100)
-        invalidate() // Redraw the view
+        invalidate()
     }
 
     fun setPercentageColor(@ColorInt color: Int) {
-        textPaint.color = color
+        textPaintDry.color = color
         invalidate()
     }
 

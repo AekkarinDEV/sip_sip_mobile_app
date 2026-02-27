@@ -228,28 +228,29 @@ class UserSetup : AppCompatActivity() {
         }
     }
 
-    private fun mapGender(genderStr: String): MainActivity.Gender = when(genderStr) {
-        "ชาย" -> MainActivity.Gender.MALE
-        else -> MainActivity.Gender.FEMALE
+    private fun mapGender(genderStr: String): Gender = when(genderStr) {
+        "ชาย" -> Gender.MALE
+        "หญิง" -> Gender.FEMALE
+        else -> Gender.OTHER
     }
 
-    private fun mapActivityLevel(activityStr: String): MainActivity.ActivityLevel = when(activityStr) {
-        "ไม่ออกกำลังกาย" -> MainActivity.ActivityLevel.SEDENTARY
-        "เล็กน้อย" -> MainActivity.ActivityLevel.LIGHT
-        "ปานกลาง" -> MainActivity.ActivityLevel.MODERATE
-        "หนัก" -> MainActivity.ActivityLevel.ACTIVE
-        else -> MainActivity.ActivityLevel.SEDENTARY
+    private fun mapActivityLevel(activityStr: String): ActivityLevel = when(activityStr) {
+        "ไม่ออกกำลังกาย" -> ActivityLevel.NONE
+        "เล็กน้อย" -> ActivityLevel.LIGHT
+        "ปานกลาง" -> ActivityLevel.MODERATE
+        "หนัก" -> ActivityLevel.HEAVY
+        else -> ActivityLevel.NONE
     }
 
-    private fun calculateDailyWater(weight: Double, gender: MainActivity.Gender, activityLevel: MainActivity.ActivityLevel): Int {
+    private fun calculateDailyWater(weight: Double, gender: Gender, activityLevel: ActivityLevel): Int {
         val baseIntake = weight * 30
         val activityBonus = when (activityLevel) {
-            MainActivity.ActivityLevel.SEDENTARY -> 0
-            MainActivity.ActivityLevel.LIGHT -> 250
-            MainActivity.ActivityLevel.MODERATE -> 500
-            MainActivity.ActivityLevel.ACTIVE -> 750
+            ActivityLevel.NONE -> 0
+            ActivityLevel.LIGHT -> 250
+            ActivityLevel.MODERATE -> 500
+            ActivityLevel.HEAVY -> 750
         }
-        val genderBonus = if (gender == MainActivity.Gender.MALE) 250 else 0
+        val genderBonus = if (gender == Gender.MALE) 250 else 0
         return (baseIntake + activityBonus + genderBonus).toInt()
     }
 }
