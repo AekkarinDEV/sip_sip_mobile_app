@@ -113,7 +113,7 @@ class MainActivity : AppCompatActivity() {
                             .tintTarget(false)
                             .transparentTarget(true),
 
-                        TapTarget.forView(findViewById(R.id.layoutRecentEntries), "(4/5) ประวัติการดื่ม", "ตรวจสอบรายการน้ำที่คุณเพิ่งดื่มไปในวันนี้ได้จากส่วนนี้")
+                        TapTarget.forView(findViewById(R.id.RecentEntries), "(4/5) ประวัติการดื่ม", "ตรวจสอบรายการน้ำที่คุณเพิ่งดื่มไปในวันนี้ได้จากส่วนนี้")
                             .outerCircleColor(R.color.blue_light)
                             .targetCircleColor(R.color.white)
                             .titleTextSize(22)
