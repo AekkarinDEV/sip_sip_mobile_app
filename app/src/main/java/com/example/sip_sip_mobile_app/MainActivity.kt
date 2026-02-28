@@ -206,8 +206,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-        val earnedBuckets = (volume / 200).toLong()
-
+        
         val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault())
         sdf.timeZone = TimeZone.getTimeZone("UTC")
 
@@ -219,23 +218,43 @@ class MainActivity : AppCompatActivity() {
             "user_id" to user.uid
         )
 
-        db.collection("consumptions").document("${user.uid}_$today")
-            .update("entries", FieldValue.arrayUnion(entry), "total_intake_ml", FieldValue.increment(volume.toLong()))
-            .addOnFailureListener { e -> Log.e("SipSipError", "Failed to log intake: ${e.message}") }
+        val consumptionRef = db.collection("consumptions").document("${user.uid}_$today")
+        
+        consumptionRef.update(
+            "entries", FieldValue.arrayUnion(entry),
+            "total_intake_ml", FieldValue.increment(volume.toLong())
+        ).addOnSuccessListener {
+            // Check if goal is reached for reward
+            consumptionRef.get().addOnSuccessListener { doc ->
+                if (doc.exists()) {
+                    val totalIntake = doc.getLong("total_intake_ml") ?: 0L
+                    val goal = doc.getLong("goal_ml") ?: 2000L
+                    val rewarded = doc.getBoolean("goal_reached_rewarded") ?: false
 
+                    if (totalIntake >= goal && !rewarded) {
+                        awardWateringCan(user.uid)
+                        consumptionRef.update("goal_reached_rewarded", true)
+                    }
+                }
+            }
+        }.addOnFailureListener { e -> 
+            Log.e("SipSipError", "Failed to log intake: ${e.message}") 
+        }
+    }
 
-        val plantRef = db.collection("plants").document(user.uid)
+    private fun awardWateringCan(userId: String) {
+        val plantRef = db.collection("plants").document(userId)
         plantRef.get().addOnSuccessListener { document ->
             if (document.exists()) {
                 plantRef.update(
-                    "watering_cans_count", FieldValue.increment(earnedBuckets),
+                    "watering_cans_count", FieldValue.increment(1),
                     "last_updated", com.google.firebase.Timestamp.now()
                 ).addOnFailureListener { e -> Log.e("SipSipError", "Update plant fail: ${e.message}") }
             } else {
                 val newPlant = hashMapOf(
-                    "user_id" to user.uid,
+                    "user_id" to userId,
                     "growth_stage" to 1,
-                    "watering_cans_count" to earnedBuckets,
+                    "watering_cans_count" to 1L,
                     "current_water_level" to 0,
                     "last_updated" to com.google.firebase.Timestamp.now()
                 )
@@ -335,7 +354,8 @@ class MainActivity : AppCompatActivity() {
                         "date" to today,
                         "total_intake_ml" to 0L,
                         "goal_ml" to goalMl,
-                        "entries" to listOf<Map<String, Any>>()
+                        "entries" to listOf<Map<String, Any>>(),
+                        "goal_reached_rewarded" to false
                     )
                     db.collection("consumptions").document("${user.uid}_$today").set(initialData)
                         .addOnSuccessListener {

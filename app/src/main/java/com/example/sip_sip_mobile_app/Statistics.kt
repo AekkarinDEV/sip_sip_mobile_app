@@ -47,7 +47,7 @@ class Statistics : AppCompatActivity() {
 
     private var currentPeriod = StatPeriod.WEEK
     private val calendar = Calendar.getInstance()
-    
+
     // ใช้ Locale.getDefault() เพื่อให้ตรงกับ MainActivity และ UserSetup (รองรับ พ.ศ.)
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
 
@@ -188,12 +188,12 @@ class Statistics : AppCompatActivity() {
                     if (dateStr < startStr || dateStr > endStr) continue
 
                     val intake = doc.getLong("total_intake_ml")?.toFloat() ?: 0f
-                    
+
                     try {
                         val date = dateFormat.parse(dateStr) ?: continue
                         val cal = Calendar.getInstance()
                         cal.time = date
-                        
+
                         val index = when (currentPeriod) {
                             StatPeriod.WEEK -> {
                                 val dayOfWeek = cal.get(Calendar.DAY_OF_WEEK)
@@ -285,13 +285,13 @@ class Statistics : AppCompatActivity() {
         start.set(Calendar.HOUR_OF_DAY, 0)
         start.set(Calendar.MINUTE, 0)
         start.set(Calendar.SECOND, 0)
-        
+
         val end = start.clone() as Calendar
         end.add(Calendar.DATE, 6)
         end.set(Calendar.HOUR_OF_DAY, 23)
         end.set(Calendar.MINUTE, 59)
         end.set(Calendar.SECOND, 59)
-        
+
         return Triple(start, end, listOf("อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"))
     }
 
@@ -299,11 +299,11 @@ class Statistics : AppCompatActivity() {
         val start = calendar.clone() as Calendar
         start.set(Calendar.DAY_OF_MONTH, 1)
         start.set(Calendar.HOUR_OF_DAY, 0)
-        
+
         val end = start.clone() as Calendar
         end.set(Calendar.DAY_OF_MONTH, end.getActualMaximum(Calendar.DAY_OF_MONTH))
         end.set(Calendar.HOUR_OF_DAY, 23)
-        
+
         val labels = (1..start.getActualMaximum(Calendar.DAY_OF_MONTH)).map { it.toString() }
         return Triple(start, end, labels)
     }
@@ -312,7 +312,7 @@ class Statistics : AppCompatActivity() {
         val start = calendar.clone() as Calendar
         start.set(Calendar.DAY_OF_YEAR, 1)
         start.set(Calendar.HOUR_OF_DAY, 0)
-        
+
         val end = start.clone() as Calendar
         end.set(Calendar.MONTH, Calendar.DECEMBER)
         end.set(Calendar.DAY_OF_MONTH, 31)
