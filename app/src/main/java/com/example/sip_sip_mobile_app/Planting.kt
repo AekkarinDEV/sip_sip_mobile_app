@@ -2,7 +2,6 @@ package com.example.sip_sip_mobile_app
 
 import android.graphics.Color
 import android.graphics.PorterDuff
-import android.graphics.PorterDuffColorFilter
 import android.os.Bundle
 import android.view.View
 import android.widget.ImageView
@@ -11,10 +10,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import cn.pedant.SweetAlert.SweetAlertDialog
-import com.airbnb.lottie.LottieAnimationView
-import com.airbnb.lottie.LottieProperty
-import com.airbnb.lottie.model.KeyPath
-import com.airbnb.lottie.value.LottieValueCallback
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
@@ -24,7 +19,7 @@ class Planting : AppCompatActivity() {
 
     private lateinit var auth: FirebaseAuth
     private lateinit var db: FirebaseFirestore
-    private lateinit var lottieTree: LottieAnimationView
+    private lateinit var imgTree: ImageView
     private lateinit var tvCount: TextView
     private lateinit var tvWaterAmount: TextView
     private lateinit var tvStreakCount: TextView
@@ -43,7 +38,7 @@ class Planting : AppCompatActivity() {
         auth = FirebaseAuth.getInstance()
         db = FirebaseFirestore.getInstance()
 
-        lottieTree = findViewById(R.id.lottieTree)
+        imgTree = findViewById(R.id.imgTree)
         tvCount = findViewById(R.id.tvCount)
         tvWaterAmount = findViewById(R.id.tvWaterAmount)
         tvStreakCount = findViewById(R.id.tvStreakCount)
@@ -75,7 +70,7 @@ class Planting : AppCompatActivity() {
                     fetchUserStreak(uid)
                     tvCount.text = currentWaterLevel.toString()
                     tvWaterAmount.text = wateringCans.toString()
-                    checkTreeHealth(currentWaterLevel, lastUpdated, growthStage)
+                    updateTreeDisplay(growthStage, lastUpdated)
                 } else {
                     createNewPlantEntry(uid)
                 }
@@ -113,23 +108,34 @@ class Planting : AppCompatActivity() {
         tvStreakCount.setTextColor(Color.parseColor(colorString))
     }
 
-    private fun checkTreeHealth(currentWater: Int, lastUpdated: Date, stage: Int) {
+    private fun updateTreeDisplay(stage: Int, lastUpdated: Date) {
+        // Set tree image based on stage (1-8)
+        val treeResId = when (stage) {
+            1 -> R.drawable.tree_level_01
+            2 -> R.drawable.tree_level_02
+            3 -> R.drawable.tree_level_03
+            4 -> R.drawable.tree_level_04
+            5 -> R.drawable.tree_level_05
+            6 -> R.drawable.tree_level_06
+            7 -> R.drawable.tree_level_07
+            else -> R.drawable.tree_level_08
+        }
+        imgTree.setImageResource(treeResId)
+
+        // Apply health filter based on time since last water
         val diffInHours = (Date().time - lastUpdated.time) / (1000 * 60 * 60)
-        lottieTree.setAnimation(if (stage < 2) "sprout.json" else "tree.json")
         when {
             diffInHours >= 48 -> {
-                applyTreeFilter("#8B4513")
-                lottieTree.pauseAnimation()
+                // Dying - brown tint
+                imgTree.setColorFilter(Color.parseColor("#8B4513"), PorterDuff.Mode.MULTIPLY)
             }
             diffInHours >= 24 -> {
-                applyTreeFilter("#D4D4A1")
-                lottieTree.speed = 0.5f
-                lottieTree.playAnimation()
+                // Thirsty - yellowish tint
+                imgTree.setColorFilter(Color.parseColor("#D4D4A1"), PorterDuff.Mode.MULTIPLY)
             }
             else -> {
-                applyTreeFilter(null)
-                lottieTree.speed = 1.0f
-                lottieTree.playAnimation()
+                // Healthy - no tint
+                imgTree.clearColorFilter()
             }
         }
     }
@@ -142,6 +148,7 @@ class Planting : AppCompatActivity() {
             val docId = doc.id
             val currentBuckets = doc.getLong("watering_cans_count")?.toInt() ?: 0
             val currentLevel = doc.getLong("current_water_level")?.toInt() ?: 0
+            val currentStage = doc.getLong("growth_stage")?.toInt() ?: 1
 
             if (currentBuckets > 0) {
                 val updates = hashMapOf<String, Any>(
@@ -149,7 +156,12 @@ class Planting : AppCompatActivity() {
                     "watering_cans_count" to FieldValue.increment(-1),
                     "last_updated" to FieldValue.serverTimestamp()
                 )
-                if (currentLevel + 1 >= 50) updates["growth_stage"] = FieldValue.increment(1)
+                
+                // Example logic: advance stage every 10 waterings, up to stage 8
+                if ((currentLevel + 1) % 10 == 0 && currentStage < 8) {
+                    updates["growth_stage"] = FieldValue.increment(1)
+                }
+                
                 db.collection("plants").document(docId).update(updates).addOnSuccessListener {
                     val pDialog = SweetAlertDialog(this, SweetAlertDialog.SUCCESS_TYPE)
                     pDialog.titleText = "รดน้ำเรียบร้อย!"
@@ -157,16 +169,15 @@ class Planting : AppCompatActivity() {
                     pDialog.confirmText = "ตกลง"
                     pDialog.show()
                     pDialog.getButton(SweetAlertDialog.BUTTON_CONFIRM).setBackgroundResource(R.drawable.btn_round_green)
+                    
+                    // Add a small scale animation when watering
+                    imgTree.animate().scaleX(1.1f).scaleY(1.1f).setDuration(100).withEndAction {
+                        imgTree.animate().scaleX(1.0f).scaleY(1.0f).setDuration(100).start()
+                    }.start()
                 }
             } else {
                 SweetAlertDialog(this, SweetAlertDialog.ERROR_TYPE).setTitleText("น้ำหมด!").setContentText("ไปดื่มน้ำเพิ่มเพื่อรับฝักบัวนะ").show()
             }
         }
-    }
-
-    private fun applyTreeFilter(colorHex: String?) {
-        val callback = if (colorHex == null) null
-        else LottieValueCallback<android.graphics.ColorFilter>(PorterDuffColorFilter(Color.parseColor(colorHex), PorterDuff.Mode.SRC_ATOP))
-        lottieTree.addValueCallback(KeyPath("**"), LottieProperty.COLOR_FILTER, callback)
     }
 }
