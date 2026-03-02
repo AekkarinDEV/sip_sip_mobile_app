@@ -18,6 +18,7 @@ import com.github.mikephil.charting.data.BarData
 import com.github.mikephil.charting.data.BarDataSet
 import com.github.mikephil.charting.data.BarEntry
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
+import com.github.mikephil.charting.formatter.ValueFormatter
 import com.google.android.material.button.MaterialButton
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -48,7 +49,6 @@ class Statistics : AppCompatActivity() {
     private var currentPeriod = StatPeriod.WEEK
     private val calendar = Calendar.getInstance()
 
-    // ใช้ Locale.getDefault() เพื่อให้ตรงกับ MainActivity และ UserSetup (รองรับ พ.ศ.)
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -183,7 +183,6 @@ class Statistics : AppCompatActivity() {
                 var count = 0
 
                 for (doc in documents) {
-                    // ตรวจสอบทั้ง "date" และ "date_string" เพื่อความยืดหยุ่น
                     val dateStr = doc.getString("date") ?: doc.getString("date_string") ?: ""
                     if (dateStr < startStr || dateStr > endStr) continue
 
@@ -237,18 +236,62 @@ class Statistics : AppCompatActivity() {
     private fun setupChart(entries: List<BarEntry>, labels: List<String>) {
         val dataSet = BarDataSet(entries, "")
         dataSet.color = "#5DADE2".toColorInt()
-        dataSet.valueTextSize = 10f
+        dataSet.valueTextSize = 9f
+        dataSet.setDrawValues(true) // แสดงตัวเลขบนแท่ง
+        
+        dataSet.valueFormatter = object : ValueFormatter() {
+            override fun getFormattedValue(value: Float): String {
+                return if (value > 0) String.format("%.1f", value) else ""
+            }
+        }
+
         barChart.data = BarData(dataSet)
         barChart.description.isEnabled = false
         barChart.legend.isEnabled = false
+        
+        // เปิดการเลื่อนกราฟ
+        barChart.setTouchEnabled(true)
+        barChart.setDragEnabled(true)
+        barChart.setScaleEnabled(false) // ปิดการซูมด้วยนิ้วเพื่อให้เลื่อนง่ายขึ้น
+        barChart.setPinchZoom(false)
+        barChart.isDoubleTapToZoomEnabled = false
+
         barChart.xAxis.apply {
             valueFormatter = IndexAxisValueFormatter(labels)
             position = XAxis.XAxisPosition.BOTTOM
             setDrawGridLines(false)
             granularity = 1f
+            textSize = 10f
+            textColor = Color.DKGRAY
+            setLabelCount(labels.size) // พยายามโชว์ทุก Label เพราะเราเลื่อนกราฟได้แล้ว
         }
-        barChart.axisLeft.axisMinimum = 0f
+        
+        barChart.axisLeft.apply {
+            axisMinimum = 0f
+            textColor = Color.GRAY
+            textSize = 10f
+            setDrawGridLines(true)
+            gridColor = Color.parseColor("#EEEEEE")
+        }
+        
         barChart.axisRight.isEnabled = false
+        barChart.extraBottomOffset = 15f 
+
+        // จำกัดการแสดงผล (Scrollable)
+        when (currentPeriod) {
+            StatPeriod.MONTH -> {
+                barChart.setVisibleXRangeMaximum(8f) // แสดงทีละ 8 วัน
+                barChart.moveViewToX(0f) // เริ่มต้นที่วันแรก
+            }
+            StatPeriod.YEAR -> {
+                barChart.setVisibleXRangeMaximum(6f) // แสดงทีละ 6 เดือน
+                barChart.moveViewToX(0f)
+            }
+            StatPeriod.WEEK -> {
+                barChart.fitScreen() // สัปดาห์โชว์ครบได้เลย
+            }
+        }
+
         barChart.animateY(800)
         barChart.invalidate()
     }
