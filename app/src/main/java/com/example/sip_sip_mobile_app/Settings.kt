@@ -13,6 +13,7 @@ import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.widget.addTextChangedListener
+import androidx.work.*
 import cn.pedant.SweetAlert.SweetAlertDialog
 import com.bumptech.glide.Glide
 import com.google.android.material.button.MaterialButton
@@ -25,6 +26,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
 import java.text.SimpleDateFormat
 import java.util.*
+import java.util.concurrent.TimeUnit
 
 class Settings : AppCompatActivity() {
 
@@ -81,6 +83,7 @@ class Settings : AppCompatActivity() {
 
     companion object {
         private const val PICK_IMAGE = 101
+        private const val REMINDER_WORK_NAME = "water_reminder_work"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -175,6 +178,16 @@ class Settings : AppCompatActivity() {
         etWeightEdit.addTextChangedListener { tilWeightEdit.error = null }
         etGenderEdit.addTextChangedListener { tilGenderEdit.error = null }
         etActivityEdit.addTextChangedListener { tilActivityEdit.error = null }
+    }
+
+    private fun setupDropdowns() {
+        val genders = arrayOf("ชาย", "หญิง", "อื่นๆ")
+        val genderAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, genders)
+        etGenderEdit.setAdapter(genderAdapter)
+
+        val activities = arrayOf("ไม่ออกกำลังกาย", "เล็กน้อย", "ปานกลาง", "หนัก")
+        val activityAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, activities)
+        etActivityEdit.setAdapter(activityAdapter)
     }
 
     private fun validateInputs(): Boolean {
@@ -279,6 +292,7 @@ class Settings : AppCompatActivity() {
         val activityLevel = WaterIntakeCalculator.mapActivityLevel(activityStr)
         val roundedGoal = WaterIntakeCalculator.calculateDailyWater(weightKg, gender, activityLevel)
 
+        val isNotifyEnabled = switchNotify.isChecked
         val profileData: HashMap<String, Any> = hashMapOf(
             "username" to etNameEdit.text.toString(),
             "gender" to genderStr,
@@ -286,7 +300,7 @@ class Settings : AppCompatActivity() {
             "weight" to weightKg,
             "wakeTime" to etStartTime.text.toString(),
             "sleepTime" to etEndTime.text.toString(),
-            "notify" to switchNotify.isChecked
+            "notify" to isNotifyEnabled
         )
 
         val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
@@ -317,6 +331,29 @@ class Settings : AppCompatActivity() {
         } else {
             updateFirestore(uid, profileData, loadingDialog)
         }
+
+        // จัดการ WorkManager สำหรับการแจ้งเตือน
+        if (isNotifyEnabled) {
+            scheduleWaterReminder()
+        } else {
+            cancelWaterReminder()
+        }
+    }
+
+    private fun scheduleWaterReminder() {
+        val reminderRequest = PeriodicWorkRequestBuilder<WaterReminderWorker>(2, TimeUnit.HOURS)
+            .addTag(REMINDER_WORK_NAME)
+            .build()
+
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            REMINDER_WORK_NAME,
+            ExistingPeriodicWorkPolicy.UPDATE,
+            reminderRequest
+        )
+    }
+
+    private fun cancelWaterReminder() {
+        WorkManager.getInstance(this).cancelUniqueWork(REMINDER_WORK_NAME)
     }
 
     private fun updateFirestore(uid: String, data: Map<String, Any>, loadingDialog: SweetAlertDialog) {
@@ -463,13 +500,6 @@ class Settings : AppCompatActivity() {
         switchNotify.isChecked = oldNotify
     }
 
-    private fun setupDropdowns() {
-        val genders = listOf("ชาย", "หญิง", "อื่นๆ")
-        etGenderEdit.setAdapter(ArrayAdapter(this, android.R.layout.simple_list_item_1, genders))
-        val activities = listOf("ไม่ออกกำลังกาย", "เล็กน้อย", "ปานกลาง", "หนัก")
-        etActivityEdit.setAdapter(ArrayAdapter(this, android.R.layout.simple_list_item_1, activities))
-    }
-
     private fun setupTimePickers() {
         etStartTime.setOnClickListener { if (etStartTime.isEnabled) showTimePicker { etStartTime.setText(it) } }
         etEndTime.setOnClickListener { if (etEndTime.isEnabled) showTimePicker { etEndTime.setText(it) } }
@@ -490,6 +520,7 @@ class Settings : AppCompatActivity() {
 
     private fun logout() {
         auth.signOut()
+        cancelWaterReminder() // ยกเลิกการแจ้งเตือนเมื่อ Logout
         val intent = Intent(this, Login::class.java)
         intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         startActivity(intent)
