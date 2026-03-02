@@ -40,18 +40,23 @@ class Settings : AppCompatActivity() {
     private lateinit var tvEmail: TextView
 
     // ===== form =====
+    private lateinit var tilGenderView: TextInputLayout
     private lateinit var etGenderView: EditText
     private lateinit var tilGenderEdit: TextInputLayout
     private lateinit var etGenderEdit: AutoCompleteTextView
     
+    private lateinit var tilWeightView: TextInputLayout
     private lateinit var etWeightView: EditText
     private lateinit var tilWeightEdit: TextInputLayout
     private lateinit var etWeightEdit: TextInputEditText
     
+    private lateinit var tilStartTime: TextInputLayout
     private lateinit var etStartTime: EditText
+    private lateinit var tilEndTime: TextInputLayout
     private lateinit var etEndTime: EditText
     private lateinit var switchNotify: SwitchMaterial
 
+    private lateinit var tilActivityView: TextInputLayout
     private lateinit var etActivityView: EditText
     private lateinit var tilActivityEdit: TextInputLayout
     private lateinit var etActivityEdit: AutoCompleteTextView
@@ -141,18 +146,23 @@ class Settings : AppCompatActivity() {
         tvEmail = findViewById(R.id.tvEmail)
         btnLogout = findViewById(R.id.btnLogout)
         
+        tilGenderView = findViewById(R.id.tilGenderView)
         etGenderView = findViewById(R.id.etGenderView)
         tilGenderEdit = findViewById(R.id.tilGenderEdit)
         etGenderEdit = findViewById(R.id.etGenderEdit)
         
+        tilWeightView = findViewById(R.id.tilWeightView)
         etWeightView = findViewById(R.id.etWeightView)
         tilWeightEdit = findViewById(R.id.tilWeightEdit)
         etWeightEdit = findViewById(R.id.etWeightEdit)
         
+        tilStartTime = findViewById(R.id.tilStartTime)
         etStartTime = findViewById(R.id.etStartTime)
+        tilEndTime = findViewById(R.id.tilEndTime)
         etEndTime = findViewById(R.id.etEndTime)
         switchNotify = findViewById(R.id.switchNotify)
         
+        tilActivityView = findViewById(R.id.tilActivityView)
         etActivityView = findViewById(R.id.etActivityView)
         tilActivityEdit = findViewById(R.id.tilActivityEdit)
         etActivityEdit = findViewById(R.id.etActivityEdit)
@@ -265,7 +275,6 @@ class Settings : AppCompatActivity() {
 
         val weightKg = weightStr.toDouble()
         
-        // ใช้ WaterIntakeCalculator แทนการเขียนสูตรเอง
         val gender = WaterIntakeCalculator.mapGender(genderStr)
         val activityLevel = WaterIntakeCalculator.mapActivityLevel(activityStr)
         val roundedGoal = WaterIntakeCalculator.calculateDailyWater(weightKg, gender, activityLevel)
@@ -339,17 +348,20 @@ class Settings : AppCompatActivity() {
     }
 
     private fun setEditable(enable: Boolean) {
+        val timeBgColor = if (enable) Color.WHITE else Color.parseColor("#F5F5F5")
+        val timeTextColor = if (enable) Color.BLACK else Color.parseColor("#777777")
+
         if (enable) {
             etActivityEdit.setText(etActivityView.text.toString(), false)
-            etActivityView.visibility = View.GONE
+            tilActivityView.visibility = View.GONE
             tilActivityEdit.visibility = View.VISIBLE
             
             etGenderEdit.setText(etGenderView.text.toString(), false)
-            etGenderView.visibility = View.GONE
+            tilGenderView.visibility = View.GONE
             tilGenderEdit.visibility = View.VISIBLE
             
             etWeightEdit.setText(etWeightView.text.toString())
-            etWeightView.visibility = View.GONE
+            tilWeightView.visibility = View.GONE
             tilWeightEdit.visibility = View.VISIBLE
             
             etNameEdit.setText(tvNameView.text.toString())
@@ -357,24 +369,36 @@ class Settings : AppCompatActivity() {
             etNameEdit.visibility = View.VISIBLE
         } else {
             etActivityView.setText(etActivityEdit.text.toString())
-            etActivityView.visibility = View.VISIBLE
+            tilActivityView.visibility = View.VISIBLE
             tilActivityEdit.visibility = View.GONE
             
             etGenderView.setText(etGenderEdit.text.toString())
-            etGenderView.visibility = View.VISIBLE
+            tilGenderView.visibility = View.VISIBLE
             tilGenderEdit.visibility = View.GONE
             
             etWeightView.setText(etWeightEdit.text.toString())
-            etWeightView.visibility = View.VISIBLE
+            tilWeightView.visibility = View.VISIBLE
             tilWeightEdit.visibility = View.GONE
             
             tvNameView.text = etNameEdit.text.toString()
             tvNameView.visibility = View.VISIBLE
             etNameEdit.visibility = View.GONE
         }
+        
         imgAvatar.isEnabled = enable
+        
+        // สำหรับเวลาให้เปิด/ปิดการทำงานและเปลี่ยนสีพื้นหลัง/ข้อความ
         etStartTime.isEnabled = enable
         etEndTime.isEnabled = enable
+        etStartTime.setTextColor(timeTextColor)
+        etEndTime.setTextColor(timeTextColor)
+        
+        tilStartTime.boxBackgroundColor = timeBgColor
+        tilEndTime.boxBackgroundColor = timeBgColor
+        
+        tilStartTime.isEnabled = enable
+        tilEndTime.isEnabled = enable
+
         switchNotify.isEnabled = enable
         btnSave.visibility = if (enable) View.VISIBLE else View.GONE
         btnCancel.visibility = if (enable) View.VISIBLE else View.GONE
