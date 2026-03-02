@@ -128,14 +128,20 @@ class Login : AppCompatActivity() {
                     val completed = doc.getBoolean("setupCompleted") ?: false
                     if (completed) {
                         // ถ้า Setup เสร็จแล้ว ไปหน้า Main
-                        startActivity(Intent(this, MainActivity::class.java))
+                        val intent = Intent(this, MainActivity::class.java)
+                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        startActivity(intent)
                     } else {
                         // ถ้ายังไม่เสร็จ ไปหน้า Setup
-                        startActivity(Intent(this, UserSetup::class.java))
+                        val intent = Intent(this, UserSetup::class.java)
+                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        startActivity(intent)
                     }
                 } else {
-                    // กรณีไม่มีข้อมูลใน Firestore ให้ไปหน้า Setup
-                    startActivity(Intent(this, UserSetup::class.java))
+                    // กรณีไม่มีข้อมูลใน Firestore (อาจจะสมัครแล้วเน็ตหลุด) ให้ไปหน้า Setup
+                    val intent = Intent(this, UserSetup::class.java)
+                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    startActivity(intent)
                 }
                 finish()
             }

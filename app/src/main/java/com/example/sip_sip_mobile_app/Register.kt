@@ -74,7 +74,6 @@ class Register : AppCompatActivity() {
         etPassword = findViewById(R.id.etRegPassword)
         etConfirm = findViewById(R.id.etRegPasswordConfirm)
 
-        // ล้าง Error เมื่อมีการพิมพ์ใหม่
         etUsername.addTextChangedListener { tilUsername.error = null }
         etEmail.addTextChangedListener { tilEmail.error = null }
         etPassword.addTextChangedListener { tilPassword.error = null }
@@ -135,15 +134,18 @@ class Register : AppCompatActivity() {
             .addOnSuccessListener { result ->
                 val uid = result.user!!.uid
                 val userData = hashMapOf(
-                    "username" to username, // แก้จาก "name" เป็น "username" ให้ตรงกับ MainActivity
+                    "username" to username,
                     "email" to email,
-                    "setupCompleted" to false
+                    "setupCompleted" to false,
+                    "avatarUrl" to "",
+                    "weight" to 0.0,
+                    "gender" to "ชาย",
+                    "createdAt" to com.google.firebase.Timestamp.now()
                 )
 
                 db.collection("users").document(uid).set(userData)
                     .addOnSuccessListener {
                         loadingDialog.dismissWithAnimation()
-                        // สมัครสำเร็จ -> ส่งไปหน้า UserSetup ทันที
                         val intent = Intent(this, UserSetup::class.java)
                         intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                         startActivity(intent)
@@ -151,7 +153,7 @@ class Register : AppCompatActivity() {
                     }
                     .addOnFailureListener {
                         loadingDialog.dismissWithAnimation()
-                        Toast.makeText(this, "บันทึกข้อมูลล้มเหลว: ${'$'}{it.message}", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this, "บันทึกข้อมูลล้มเหลว: ${it.message}", Toast.LENGTH_SHORT).show()
                     }
             }
             .addOnFailureListener {

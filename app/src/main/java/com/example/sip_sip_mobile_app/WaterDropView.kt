@@ -5,6 +5,7 @@ import android.content.Context
 import android.graphics.*
 import android.util.AttributeSet
 import android.view.View
+import android.view.animation.DecelerateInterpolator
 import android.view.animation.LinearInterpolator
 import androidx.annotation.ColorInt
 import kotlin.math.min
@@ -19,6 +20,8 @@ class WaterDropView @JvmOverloads constructor(
     private val circlePath = Path()
     private var waveOffset = 0f
     private var percentage = 0
+    private var animatedPercentage = 0f
+    private var progressAnimator: ValueAnimator? = null
 
     private val circlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.WHITE
@@ -88,7 +91,7 @@ class WaterDropView @JvmOverloads constructor(
         canvas.drawPath(circlePath, circlePaint)
 
         val textY = viewHeight / 2f - ((textPaintDry.descent() + textPaintDry.ascent()) / 2f)
-        val textStr = "$percentage%"
+        val textStr = "${percentage}%"
 
         // 2. วาดตัวเลขสีฟ้า (จะเห็นได้ชัดบนพื้นหลังขาว)
         canvas.drawText(textStr, viewWidth / 2f, textY, textPaintDry)
@@ -112,7 +115,8 @@ class WaterDropView @JvmOverloads constructor(
     }
 
     private fun getWavePath(): Path {
-        val waterLevelY = (viewHeight / 2f + radius) - (2 * radius * percentage / 100f)
+        // ใช้ animatedPercentage แทน percentage เพื่อความสมูท
+        val waterLevelY = (viewHeight / 2f + radius) - (2 * radius * animatedPercentage / 100f)
         val waveHeight = radius * 0.08f // ปรับความสูงคลื่นให้พอดี
 
         val path = Path()
@@ -134,8 +138,24 @@ class WaterDropView @JvmOverloads constructor(
     }
 
     fun setProgress(value: Int) {
-        this.percentage = value.coerceIn(0, 100)
-        invalidate()
+        val newTarget = value.coerceIn(0, 100)
+        if (this.percentage == newTarget) return
+
+        this.percentage = newTarget
+
+        // ยกเลิก Animator เดิมถ้ามี
+        progressAnimator?.cancel()
+
+        // สร้าง Animator ใหม่เพื่อวิ่งจากค่าปัจจุบันไปยังค่าใหม่
+        progressAnimator = ValueAnimator.ofFloat(animatedPercentage, newTarget.toFloat()).apply {
+            duration = 1000 // 1 วินาที
+            interpolator = DecelerateInterpolator() // ค่อยๆ ช้าลงตอนใกล้ถึง
+            addUpdateListener {
+                animatedPercentage = it.animatedValue as Float
+                invalidate()
+            }
+            start()
+        }
     }
 
     fun setPercentageColor(@ColorInt color: Int) {

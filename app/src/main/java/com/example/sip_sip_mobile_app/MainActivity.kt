@@ -210,7 +210,7 @@ class MainActivity : AppCompatActivity() {
             "user_id" to user.uid
         )
 
-        val consumptionRef = db.collection("consumptions").document("${'$'}{user.uid}_$today")
+        val consumptionRef = db.collection("consumptions").document("${user.uid}_$today")
         
         consumptionRef.update(
             "entries", FieldValue.arrayUnion(entry),
@@ -229,7 +229,7 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }.addOnFailureListener { e -> 
-            Log.e("SipSipError", "Failed to log intake: ${'$'}{e.message}") 
+            Log.e("SipSipError", "Failed to log intake: ${e.message}") 
         }
     }
 
@@ -240,7 +240,7 @@ class MainActivity : AppCompatActivity() {
                 plantRef.update(
                     "watering_cans_count", FieldValue.increment(1),
                     "last_updated", com.google.firebase.Timestamp.now()
-                ).addOnFailureListener { e -> Log.e("SipSipError", "Update plant fail: ${'$'}{e.message}") }
+                ).addOnFailureListener { e -> Log.e("SipSipError", "Update plant fail: ${e.message}") }
             } else {
                 val newPlant = hashMapOf(
                     "user_id" to userId,
@@ -249,7 +249,7 @@ class MainActivity : AppCompatActivity() {
                     "current_water_level" to 0,
                     "last_updated" to com.google.firebase.Timestamp.now()
                 )
-                plantRef.set(newPlant).addOnFailureListener { e -> Log.e("SipSipError", "Create plant fail: ${'$'}{e.message}") }
+                plantRef.set(newPlant).addOnFailureListener { e -> Log.e("SipSipError", "Create plant fail: ${e.message}") }
             }
         }
     }
@@ -258,7 +258,7 @@ class MainActivity : AppCompatActivity() {
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_custom_intake, null)
         val slider = dialogView.findViewById<Slider>(R.id.sliderCustomVolume)
         val tvSliderValue = dialogView.findViewById<TextView>(R.id.tvSliderValue)
-        slider.addOnChangeListener { _, value, _ -> tvSliderValue.text = "${'$'}{value.toInt()} ml" }
+        slider.addOnChangeListener { _, value, _ -> tvSliderValue.text = "${value.toInt()} ml" }
 
         AlertDialog.Builder(this)
             .setView(dialogView)
@@ -287,7 +287,7 @@ class MainActivity : AppCompatActivity() {
         val user = auth.currentUser ?: return
         val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
         val layoutRecentEntries = findViewById<LinearLayout>(R.id.layoutRecentEntries)
-        val docRef = db.collection("consumptions").document("${'$'}{user.uid}_$today")
+        val docRef = db.collection("consumptions").document("${user.uid}_$today")
 
         docRef.addSnapshotListener { document, error ->
             if (error != null) return@addSnapshotListener
@@ -338,7 +338,7 @@ class MainActivity : AppCompatActivity() {
                         "entries" to listOf<Map<String, Any>>(),
                         "goal_reached_rewarded" to false
                     )
-                    db.collection("consumptions").document("${'$'}{user.uid}_$today").set(initialData)
+                    db.collection("consumptions").document("${user.uid}_$today").set(initialData)
                         .addOnSuccessListener { showTutorialIfNeeded() }
                 }
             }
