@@ -160,9 +160,10 @@ class UserSetup : AppCompatActivity() {
         val startTime = etStartTime.text.toString()
         val endTime = etEndTime.text.toString()
 
-        val goalMl = calculateDailyWater(weightKg, mapGender(genderStr), mapActivityLevel(activityStr))
-        // ปัดเลขให้กลมเป็นหลักสิบเพื่อความสวยงาม
-        val roundedGoal = (Math.round(goalMl / 10.0) * 10).toInt()
+        // ใช้ WaterIntakeCalculator ในการคำนวณเป้าหมายน้ำ
+        val gender = WaterIntakeCalculator.mapGender(genderStr)
+        val activityLevel = WaterIntakeCalculator.mapActivityLevel(activityStr)
+        val roundedGoal = WaterIntakeCalculator.calculateDailyWater(weightKg, gender, activityLevel)
 
         val profileData = hashMapOf(
             "gender" to genderStr,
@@ -226,31 +227,5 @@ class UserSetup : AppCompatActivity() {
             val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
             imm.hideSoftInputFromWindow(view.windowToken, 0)
         }
-    }
-
-    private fun mapGender(genderStr: String): Gender = when(genderStr) {
-        "ชาย" -> Gender.MALE
-        "หญิง" -> Gender.FEMALE
-        else -> Gender.OTHER
-    }
-
-    private fun mapActivityLevel(activityStr: String): ActivityLevel = when(activityStr) {
-        "ไม่ออกกำลังกาย" -> ActivityLevel.NONE
-        "เล็กน้อย" -> ActivityLevel.LIGHT
-        "ปานกลาง" -> ActivityLevel.MODERATE
-        "หนัก" -> ActivityLevel.HEAVY
-        else -> ActivityLevel.NONE
-    }
-
-    private fun calculateDailyWater(weight: Double, gender: Gender, activityLevel: ActivityLevel): Int {
-        val baseIntake = weight * 30
-        val activityBonus = when (activityLevel) {
-            ActivityLevel.NONE -> 0
-            ActivityLevel.LIGHT -> 250
-            ActivityLevel.MODERATE -> 500
-            ActivityLevel.HEAVY -> 750
-        }
-        val genderBonus = if (gender == Gender.MALE) 250 else 0
-        return (baseIntake + activityBonus + genderBonus).toInt()
     }
 }

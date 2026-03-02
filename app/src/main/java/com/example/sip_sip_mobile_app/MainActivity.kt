@@ -69,7 +69,7 @@ class MainActivity : AppCompatActivity() {
         val bottomNavView = findViewById<View>(R.id.layout_bottom_nav)
         BottomNavManager(this, bottomNavView).setupBottomNavigation()
 
-        observeUserProfile() // เปลี่ยนเป็น Observe เพื่อให้ซิงค์ Real-time
+        observeUserProfile()
         loadTodayIntake() 
         setupIntakeButtons()
     }
@@ -326,20 +326,28 @@ class MainActivity : AppCompatActivity() {
                 }
                 showTutorialIfNeeded()
             } else {
-                // Initialize daily data if not exists
+                // ดึงข้อมูลจริงจาก Profile มาคำนวณเป้าหมายวันใหม่
                 db.collection("users").document(user.uid).get().addOnSuccessListener { userDoc ->
-                    val weight = userDoc.getDouble("weight") ?: 70.0
-                    val goalMl = (weight * 35).toLong() // Simple fallback goal
-                    val initialData = hashMapOf(
-                        "user_id" to user.uid,
-                        "date" to today,
-                        "total_intake_ml" to 0L,
-                        "goal_ml" to goalMl,
-                        "entries" to listOf<Map<String, Any>>(),
-                        "goal_reached_rewarded" to false
-                    )
-                    db.collection("consumptions").document("${user.uid}_$today").set(initialData)
-                        .addOnSuccessListener { showTutorialIfNeeded() }
+                    if (userDoc.exists()) {
+                        val weight = userDoc.getDouble("weight") ?: 70.0
+                        val genderStr = userDoc.getString("gender") ?: "ชาย"
+                        val activityStr = userDoc.getString("activity") ?: "ไม่ออกกำลังกาย"
+                        
+                        val gender = WaterIntakeCalculator.mapGender(genderStr)
+                        val activityLevel = WaterIntakeCalculator.mapActivityLevel(activityStr)
+                        val goalMl = WaterIntakeCalculator.calculateDailyWater(weight, gender, activityLevel)
+
+                        val initialData = hashMapOf(
+                            "user_id" to user.uid,
+                            "date" to today,
+                            "total_intake_ml" to 0L,
+                            "goal_ml" to goalMl.toLong(),
+                            "entries" to listOf<Map<String, Any>>(),
+                            "goal_reached_rewarded" to false
+                        )
+                        db.collection("consumptions").document("${user.uid}_$today").set(initialData)
+                            .addOnSuccessListener { showTutorialIfNeeded() }
+                    }
                 }
             }
         }
@@ -351,7 +359,6 @@ class MainActivity : AppCompatActivity() {
         profileListener = db.collection("users").document(user.uid)
             .addSnapshotListener { document, _ ->
                 if (document != null && document.exists()) {
-                    // ใช้ username เป็นหลัก ถ้าไม่มีค่อยใช้ name (fallback สำหรับข้อมูลเก่า)
                     val name = document.getString("username") ?: document.getString("name") ?: "User"
                     findViewById<TextView>(R.id.tvUsername).text = name
                     

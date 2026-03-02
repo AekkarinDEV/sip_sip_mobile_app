@@ -162,7 +162,6 @@ class Settings : AppCompatActivity() {
         btnCancel = findViewById(R.id.btnCancel)
         btnBack = findViewById(R.id.btnBack)
 
-        // Clear error on change
         etWeightEdit.addTextChangedListener { tilWeightEdit.error = null }
         etGenderEdit.addTextChangedListener { tilGenderEdit.error = null }
         etActivityEdit.addTextChangedListener { tilActivityEdit.error = null }
@@ -265,13 +264,14 @@ class Settings : AppCompatActivity() {
         val activityStr = etActivityEdit.text.toString()
 
         val weightKg = weightStr.toDouble()
-        val gender = mapGender(genderStr)
-        val activityLevel = mapActivityLevel(activityStr)
-        val goalMl = calculateDailyWater(weightKg, gender, activityLevel)
-        val roundedGoal = (Math.round(goalMl / 10.0) * 10).toInt()
+        
+        // ใช้ WaterIntakeCalculator แทนการเขียนสูตรเอง
+        val gender = WaterIntakeCalculator.mapGender(genderStr)
+        val activityLevel = WaterIntakeCalculator.mapActivityLevel(activityStr)
+        val roundedGoal = WaterIntakeCalculator.calculateDailyWater(weightKg, gender, activityLevel)
 
         val profileData: HashMap<String, Any> = hashMapOf(
-            "username" to etNameEdit.text.toString(), // เปลี่ยนจาก "name" เป็น "username"
+            "username" to etNameEdit.text.toString(),
             "gender" to genderStr,
             "activity" to activityStr,
             "weight" to weightKg,
@@ -281,9 +281,9 @@ class Settings : AppCompatActivity() {
         )
 
         val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-        db.collection("consumptions").document("${'$'}{uid}_$today").get().addOnSuccessListener { doc ->
+        db.collection("consumptions").document("${uid}_$today").get().addOnSuccessListener { doc ->
             if (doc.exists()) {
-                db.collection("consumptions").document("${'$'}{uid}_$today").update("goal_ml", roundedGoal)
+                db.collection("consumptions").document("${uid}_$today").update("goal_ml", roundedGoal)
             }
         }
 
@@ -293,7 +293,7 @@ class Settings : AppCompatActivity() {
         loadingDialog.show()
 
         if (imageUri != null) {
-            val ref = storage.reference.child("profile_images").child("${'$'}uid.jpg")
+            val ref = storage.reference.child("profile_images").child("$uid.jpg")
             ref.putFile(imageUri!!)
                 .addOnSuccessListener {
                     ref.downloadUrl.addOnSuccessListener { uri ->
@@ -326,7 +326,7 @@ class Settings : AppCompatActivity() {
             }
             .addOnFailureListener {
                 loadingDialog.dismissWithAnimation()
-                Toast.makeText(this, "บันทึกข้อมูลล้มเหลว: ${'$'}{it.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "บันทึกข้อมูลล้มเหลว: ${it.message}", Toast.LENGTH_SHORT).show()
             }
     }
 
@@ -387,7 +387,7 @@ class Settings : AppCompatActivity() {
         tvEmail.text = user.email ?: ""
         db.collection("users").document(user.uid).get().addOnSuccessListener { doc ->
             if (doc != null && doc.exists()) {
-                val name = doc.getString("username") ?: doc.getString("name") ?: "" // ดึง username ก่อน ถ้าไม่มีให้ใช้ name
+                val name = doc.getString("username") ?: doc.getString("name") ?: ""
                 tvNameView.text = name
                 etNameEdit.setText(name)
 
@@ -470,31 +470,5 @@ class Settings : AppCompatActivity() {
         intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         startActivity(intent)
         finish()
-    }
-
-    private fun calculateDailyWater(weight: Double, gender: Gender, activityLevel: ActivityLevel): Int {
-        val baseIntake = weight * 30
-        val activityBonus = when (activityLevel) {
-            ActivityLevel.NONE -> 0
-            ActivityLevel.LIGHT -> 250
-            ActivityLevel.MODERATE -> 500
-            ActivityLevel.HEAVY -> 750
-        }
-        val genderBonus = if (gender == Gender.MALE) 250 else 0
-        return (baseIntake + activityBonus + genderBonus).toInt()
-    }
-
-    private fun mapGender(genderStr: String): Gender = when(genderStr) {
-        "ชาย" -> Gender.MALE
-        "หญิง" -> Gender.FEMALE
-        else -> Gender.FEMALE
-    }
-
-    private fun mapActivityLevel(activityStr: String): ActivityLevel = when(activityStr) {
-        "ไม่ออกกำลังกาย" -> ActivityLevel.NONE
-        "เล็กน้อย" -> ActivityLevel.LIGHT
-        "ปานกลาง" -> ActivityLevel.MODERATE
-        "หนัก" -> ActivityLevel.HEAVY
-        else -> ActivityLevel.NONE
     }
 }
