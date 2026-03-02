@@ -55,6 +55,7 @@ class Login : AppCompatActivity() {
         etPassword = findViewById(R.id.etPassword)
         val btnLogin = findViewById<MaterialButton>(R.id.btnLogin)
         val btnRegister = findViewById<TextView>(R.id.btnReg)
+        val btnForgot = findViewById<TextView>(R.id.btnForgot)
 
         // ล้าง Error เมื่อมีการพิมพ์ใหม่
         etEmail.addTextChangedListener { tilEmail.error = null }
@@ -69,6 +70,10 @@ class Login : AppCompatActivity() {
 
         btnRegister.setOnClickListener {
             startActivity(Intent(this, Register::class.java))
+        }
+
+        btnForgot.setOnClickListener {
+            startActivity(Intent(this, ForgotPassword::class.java))
         }
     }
 

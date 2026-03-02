@@ -38,6 +38,9 @@
             android:name=".Register"
             android:exported="false" />
         <activity
+            android:name=".ForgotPassword"
+            android:exported="false" />
+        <activity
             android:name=".UserSetup"
             android:exported="false" />
         <activity
