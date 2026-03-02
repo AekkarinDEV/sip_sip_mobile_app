@@ -24,6 +24,7 @@ import com.google.android.material.slider.Slider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -33,7 +34,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var db: FirebaseFirestore
     private lateinit var cardButtons: List<CardView>
     private lateinit var waterDropView: WaterDropView
-    private var isTutorialStarted = false // เพิ่ม flag กันการเรียกซ้อน
+    private var isTutorialStarted = false 
+    
+    private var profileListener: ListenerRegistration? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -66,13 +69,13 @@ class MainActivity : AppCompatActivity() {
         val bottomNavView = findViewById<View>(R.id.layout_bottom_nav)
         BottomNavManager(this, bottomNavView).setupBottomNavigation()
 
-        loadUserProfile()
-        loadTodayIntake() // Tutorial จะถูกเรียกจากข้างในนี้หลังจากโหลดข้อมูลเสร็จ
+        observeUserProfile() // เปลี่ยนเป็น Observe เพื่อให้ซิงค์ Real-time
+        loadTodayIntake() 
         setupIntakeButtons()
     }
 
     private fun showTutorialIfNeeded() {
-        if (isTutorialStarted) return // ถ้าเริ่มไปแล้วไม่ต้องเริ่มใหม่
+        if (isTutorialStarted) return
         
         val sharedPref = getSharedPreferences("SipSipPrefs", Context.MODE_PRIVATE)
         val isTutorialDone = sharedPref.getBoolean("is_main_tutorial_done", false)
@@ -80,7 +83,6 @@ class MainActivity : AppCompatActivity() {
         if (!isTutorialDone) {
             isTutorialStarted = true
             
-            // ใช้ postDelayed เพื่อรอให้ UI มั่นใจว่าวาดตัวเลขล่าสุดเสร็จแล้วจริงๆ
             findViewById<View>(R.id.main).postDelayed({
                 val sequence = TapTargetSequence(this)
                     .targets(
@@ -92,7 +94,7 @@ class MainActivity : AppCompatActivity() {
                             .cancelable(false)
                             .tintTarget(false)
                             .transparentTarget(true)
-                            .targetRadius(60), // เพิ่มรัศมีให้คลุมตัวหนังสือพอดี
+                            .targetRadius(60),
 
                         TapTarget.forView(findViewById(R.id.waterDropView), "(2/5) สถานะปัจจุบัน", "วงกลมน้ำนี้จะบอกเปอร์เซ็นต์ความก้าวหน้า ยิ่งดื่มเยอะ น้ำยิ่งเต็มวงกลม!")
                             .outerCircleColor(R.color.blue_light)
@@ -142,13 +144,8 @@ class MainActivity : AppCompatActivity() {
                     })
                 
                 sequence.start()
-            }, 500) // หน่วงเวลาครึ่งวินาทีเพื่อให้ Firebase ข้อมูลนิ่ง
+            }, 500)
         }
-    }
-
-    override fun onResume() {
-        super.onResume()
-        loadUserProfile()
     }
 
     private fun setupIntakeButtons() {
@@ -200,13 +197,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun logIntake(type: String, volume: Int) {
-        val user = auth.currentUser ?: run {
-            Log.e("SipSipError", "User is not logged in!")
-            return
-        }
-
+        val user = auth.currentUser ?: return
         val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-        
         val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault())
         sdf.timeZone = TimeZone.getTimeZone("UTC")
 
@@ -218,13 +210,12 @@ class MainActivity : AppCompatActivity() {
             "user_id" to user.uid
         )
 
-        val consumptionRef = db.collection("consumptions").document("${user.uid}_$today")
+        val consumptionRef = db.collection("consumptions").document("${'$'}{user.uid}_$today")
         
         consumptionRef.update(
             "entries", FieldValue.arrayUnion(entry),
             "total_intake_ml", FieldValue.increment(volume.toLong())
         ).addOnSuccessListener {
-            // Check if goal is reached for reward
             consumptionRef.get().addOnSuccessListener { doc ->
                 if (doc.exists()) {
                     val totalIntake = doc.getLong("total_intake_ml") ?: 0L
@@ -238,7 +229,7 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }.addOnFailureListener { e -> 
-            Log.e("SipSipError", "Failed to log intake: ${e.message}") 
+            Log.e("SipSipError", "Failed to log intake: ${'$'}{e.message}") 
         }
     }
 
@@ -249,7 +240,7 @@ class MainActivity : AppCompatActivity() {
                 plantRef.update(
                     "watering_cans_count", FieldValue.increment(1),
                     "last_updated", com.google.firebase.Timestamp.now()
-                ).addOnFailureListener { e -> Log.e("SipSipError", "Update plant fail: ${e.message}") }
+                ).addOnFailureListener { e -> Log.e("SipSipError", "Update plant fail: ${'$'}{e.message}") }
             } else {
                 val newPlant = hashMapOf(
                     "user_id" to userId,
@@ -258,16 +249,16 @@ class MainActivity : AppCompatActivity() {
                     "current_water_level" to 0,
                     "last_updated" to com.google.firebase.Timestamp.now()
                 )
-                plantRef.set(newPlant).addOnFailureListener { e -> Log.e("SipSipError", "Create plant fail: ${e.message}") }
+                plantRef.set(newPlant).addOnFailureListener { e -> Log.e("SipSipError", "Create plant fail: ${'$'}{e.message}") }
             }
-        }.addOnFailureListener { e -> Log.e("SipSipError", "Get plant document fail: ${e.message}") }
+        }
     }
 
     private fun showCustomIntakeDialog() {
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_custom_intake, null)
         val slider = dialogView.findViewById<Slider>(R.id.sliderCustomVolume)
         val tvSliderValue = dialogView.findViewById<TextView>(R.id.tvSliderValue)
-        slider.addOnChangeListener { _, value, _ -> tvSliderValue.text = "${value.toInt()} ml" }
+        slider.addOnChangeListener { _, value, _ -> tvSliderValue.text = "${'$'}{value.toInt()} ml" }
 
         AlertDialog.Builder(this)
             .setView(dialogView)
@@ -288,7 +279,7 @@ class MainActivity : AppCompatActivity() {
             "Small Cup" -> R.drawable.smallcup
             "Regular Glass" -> R.drawable.regularglass
             "Large Glass" -> R.drawable.largeglass
-            else -> R.drawable.custom // Default icon
+            else -> R.drawable.custom
         }
     }
 
@@ -296,13 +287,10 @@ class MainActivity : AppCompatActivity() {
         val user = auth.currentUser ?: return
         val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
         val layoutRecentEntries = findViewById<LinearLayout>(R.id.layoutRecentEntries)
-        val docRef = db.collection("consumptions").document("${user.uid}_$today")
+        val docRef = db.collection("consumptions").document("${'$'}{user.uid}_$today")
 
         docRef.addSnapshotListener { document, error ->
-            if (error != null) {
-                Log.e("SipSipError", "Listen failed.", error)
-                return@addSnapshotListener
-            }
+            if (error != null) return@addSnapshotListener
 
             if (document != null && document.exists()) {
                 val totalIntake = document.getLong("total_intake_ml") ?: 0
@@ -336,19 +324,12 @@ class MainActivity : AppCompatActivity() {
                     }
                     layoutRecentEntries.addView(entryView)
                 }
-                
-                // หลังจากโหลดข้อมูลวันนี้เสร็จแล้ว ค่อยเรียก Tutorial
                 showTutorialIfNeeded()
-                
             } else {
+                // Initialize daily data if not exists
                 db.collection("users").document(user.uid).get().addOnSuccessListener { userDoc ->
-                    val goalMl = if (userDoc != null && userDoc.exists()) {
-                        val weight = userDoc.getDouble("weight") ?: 70.0
-                        (weight * 35).toLong()
-                    } else {
-                        2000L
-                    }
-
+                    val weight = userDoc.getDouble("weight") ?: 70.0
+                    val goalMl = (weight * 35).toLong() // Simple fallback goal
                     val initialData = hashMapOf(
                         "user_id" to user.uid,
                         "date" to today,
@@ -357,27 +338,33 @@ class MainActivity : AppCompatActivity() {
                         "entries" to listOf<Map<String, Any>>(),
                         "goal_reached_rewarded" to false
                     )
-                    db.collection("consumptions").document("${user.uid}_$today").set(initialData)
-                        .addOnSuccessListener {
-                            // กรณีสร้างข้อมูลใหม่เสร็จ ก็เรียก Tutorial เช่นกัน
-                            showTutorialIfNeeded()
-                        }
+                    db.collection("consumptions").document("${'$'}{user.uid}_$today").set(initialData)
+                        .addOnSuccessListener { showTutorialIfNeeded() }
                 }
             }
         }
     }
 
-    private fun loadUserProfile() {
+    private fun observeUserProfile() {
         val user = auth.currentUser ?: return
-        db.collection("users").document(user.uid).get()
-            .addOnSuccessListener { document ->
+        profileListener?.remove()
+        profileListener = db.collection("users").document(user.uid)
+            .addSnapshotListener { document, _ ->
                 if (document != null && document.exists()) {
-                    findViewById<TextView>(R.id.tvUsername).text = document.getString("username") ?: "User"
-                    val profileImageUrl = document.getString("profileImageUrl")
-                    if (!profileImageUrl.isNullOrEmpty()) {
-                        Glide.with(this).load(profileImageUrl).into(findViewById<ImageView>(R.id.imgAvatar))
+                    // ใช้ username เป็นหลัก ถ้าไม่มีค่อยใช้ name (fallback สำหรับข้อมูลเก่า)
+                    val name = document.getString("username") ?: document.getString("name") ?: "User"
+                    findViewById<TextView>(R.id.tvUsername).text = name
+                    
+                    val avatarUrl = document.getString("avatarUrl")
+                    if (!avatarUrl.isNullOrEmpty()) {
+                        Glide.with(this).load(avatarUrl).placeholder(R.drawable.profile).into(findViewById<ImageView>(R.id.imgAvatar))
                     }
                 }
             }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        profileListener?.remove()
     }
 }

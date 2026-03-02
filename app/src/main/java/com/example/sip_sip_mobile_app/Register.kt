@@ -135,7 +135,7 @@ class Register : AppCompatActivity() {
             .addOnSuccessListener { result ->
                 val uid = result.user!!.uid
                 val userData = hashMapOf(
-                    "name" to username,
+                    "username" to username, // แก้จาก "name" เป็น "username" ให้ตรงกับ MainActivity
                     "email" to email,
                     "setupCompleted" to false
                 )
@@ -151,7 +151,7 @@ class Register : AppCompatActivity() {
                     }
                     .addOnFailureListener {
                         loadingDialog.dismissWithAnimation()
-                        Toast.makeText(this, "บันทึกข้อมูลล้มเหลว: ${it.message}", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this, "บันทึกข้อมูลล้มเหลว: ${'$'}{it.message}", Toast.LENGTH_SHORT).show()
                     }
             }
             .addOnFailureListener {

@@ -271,7 +271,7 @@ class Settings : AppCompatActivity() {
         val roundedGoal = (Math.round(goalMl / 10.0) * 10).toInt()
 
         val profileData: HashMap<String, Any> = hashMapOf(
-            "name" to etNameEdit.text.toString(),
+            "username" to etNameEdit.text.toString(), // เปลี่ยนจาก "name" เป็น "username"
             "gender" to genderStr,
             "activity" to activityStr,
             "weight" to weightKg,
@@ -281,9 +281,9 @@ class Settings : AppCompatActivity() {
         )
 
         val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-        db.collection("consumptions").document("${uid}_$today").get().addOnSuccessListener { doc ->
+        db.collection("consumptions").document("${'$'}{uid}_$today").get().addOnSuccessListener { doc ->
             if (doc.exists()) {
-                db.collection("consumptions").document("${uid}_$today").update("goal_ml", roundedGoal)
+                db.collection("consumptions").document("${'$'}{uid}_$today").update("goal_ml", roundedGoal)
             }
         }
 
@@ -293,7 +293,7 @@ class Settings : AppCompatActivity() {
         loadingDialog.show()
 
         if (imageUri != null) {
-            val ref = storage.reference.child("profile_images").child("$uid.jpg")
+            val ref = storage.reference.child("profile_images").child("${'$'}uid.jpg")
             ref.putFile(imageUri!!)
                 .addOnSuccessListener {
                     ref.downloadUrl.addOnSuccessListener { uri ->
@@ -326,7 +326,7 @@ class Settings : AppCompatActivity() {
             }
             .addOnFailureListener {
                 loadingDialog.dismissWithAnimation()
-                Toast.makeText(this, "บันทึกข้อมูลล้มเหลว: ${it.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "บันทึกข้อมูลล้มเหลว: ${'$'}{it.message}", Toast.LENGTH_SHORT).show()
             }
     }
 
@@ -387,7 +387,7 @@ class Settings : AppCompatActivity() {
         tvEmail.text = user.email ?: ""
         db.collection("users").document(user.uid).get().addOnSuccessListener { doc ->
             if (doc != null && doc.exists()) {
-                val name = doc.getString("name") ?: ""
+                val name = doc.getString("username") ?: doc.getString("name") ?: "" // ดึง username ก่อน ถ้าไม่มีให้ใช้ name
                 tvNameView.text = name
                 etNameEdit.setText(name)
 
