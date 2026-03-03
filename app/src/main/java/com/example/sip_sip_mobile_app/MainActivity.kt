@@ -203,14 +203,11 @@ class MainActivity : AppCompatActivity() {
         pDialog.showCancelButton(true)
 
         pDialog.setConfirmClickListener { sDialog ->
-            logIntake(type, volume)
-            sDialog.setTitleText("สำเร็จ!")
-                .setContentText("บันทึกเรียบร้อยแล้ว")
-                .setConfirmText("ตกลง")
+            sDialog.setTitleText("กำลังบันทึก...")
+                .setContentText(null)
                 .showCancelButton(false)
-                .setConfirmClickListener { it.dismissWithAnimation(); highlightCard(null) }
-                .changeAlertType(SweetAlertDialog.SUCCESS_TYPE)
-            sDialog.getButton(SweetAlertDialog.BUTTON_CONFIRM).setBackgroundResource(R.drawable.btn_round_green)
+                .changeAlertType(SweetAlertDialog.PROGRESS_TYPE)
+            logIntake(type, volume, sDialog)
         }
 
         pDialog.setCancelClickListener {
@@ -223,7 +220,7 @@ class MainActivity : AppCompatActivity() {
         pDialog.getButton(SweetAlertDialog.BUTTON_CANCEL).setBackgroundResource(R.drawable.btn_round_red)
     }
 
-    private fun logIntake(type: String, volume: Int) {
+    private fun logIntake(type: String, volume: Int, existingDialog: SweetAlertDialog? = null) {
         val user = auth.currentUser ?: return
         val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
         val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault())
@@ -252,19 +249,24 @@ class MainActivity : AppCompatActivity() {
                     if (totalIntake >= goal && !rewarded) {
                         awardWateringCan(user.uid)
                         consumptionRef.update("goal_reached_rewarded", true).addOnSuccessListener {
-                            val rewardDialog = SweetAlertDialog(this@MainActivity, SweetAlertDialog.SUCCESS_TYPE)
-                            rewardDialog.titleText = "ยินดีด้วย!"
-                            rewardDialog.contentText = "คุณดื่มน้ำครบเป้าหมายแล้ว\nได้รับฝักบัว 1 อันสำหรับรดน้ำต้นไม้!"
-                            rewardDialog.confirmText = "ไปรดน้ำต้นไม้"
-                            rewardDialog.cancelText = "ตกลง"
-                            rewardDialog.showCancelButton(true)
-                            rewardDialog.setConfirmClickListener {
-                                it.dismissWithAnimation()
-                                startActivity(Intent(this@MainActivity, Planting::class.java))
-                            }
-                            rewardDialog.show()
-                            rewardDialog.getButton(SweetAlertDialog.BUTTON_CONFIRM).setBackgroundResource(R.drawable.btn_round_green)
+                            val dialog = existingDialog ?: SweetAlertDialog(this@MainActivity, SweetAlertDialog.SUCCESS_TYPE)
+                            dialog.setTitleText("ยินดีด้วย!")
+                                .setContentText("คุณดื่มน้ำครบเป้าหมายแล้ว\nได้รับฝักบัว 1 อันสำหรับรดน้ำต้นไม้!")
+                                .setConfirmText("ตกลง")
+                                .showCancelButton(false)
+                                .setConfirmClickListener { it.dismissWithAnimation(); highlightCard(null) }
+                                .changeAlertType(SweetAlertDialog.SUCCESS_TYPE)
+                            if (existingDialog == null) dialog.show()
+                            dialog.getButton(SweetAlertDialog.BUTTON_CONFIRM).setBackgroundResource(R.drawable.btn_round_green)
                         }
+                    } else if (existingDialog != null) {
+                        existingDialog.setTitleText("สำเร็จ!")
+                            .setContentText("บันทึกเรียบร้อยแล้ว")
+                            .setConfirmText("ตกลง")
+                            .showCancelButton(false)
+                            .setConfirmClickListener { it.dismissWithAnimation(); highlightCard(null) }
+                            .changeAlertType(SweetAlertDialog.SUCCESS_TYPE)
+                        existingDialog.getButton(SweetAlertDialog.BUTTON_CONFIRM).setBackgroundResource(R.drawable.btn_round_green)
                     }
                 }
             }
@@ -329,20 +331,6 @@ class MainActivity : AppCompatActivity() {
                 val percentage = ((totalIntake.toFloat() / goal.toFloat()) * 100).toInt()
                 waterDropView.setProgress(percentage)
 
-                // UI feedback for goal achievement
-                if (totalIntake >= goal) {
-                    findViewById<TextView>(R.id.tvLabelStatus).apply {
-                        text = "ยินดีด้วย! คุณดื่มน้ำครบเป้าหมายแล้ว"
-                        setTextColor(Color.parseColor("#4CAF50")) // Green
-                    }
-                    waterDropView.setWaterColor(Color.parseColor("#4FC3F7"), Color.parseColor("#0288D1"))
-                } else {
-                    findViewById<TextView>(R.id.tvLabelStatus).apply {
-                        text = "วันนี้ดื่มน้ำไปแล้ว"
-                        setTextColor(Color.parseColor("#757575"))
-                    }
-                    waterDropView.setWaterColor(Color.parseColor("#81D4FA"), Color.parseColor("#29B6F6"))
-                }
 
                 layoutRecentEntries.removeAllViews()
                 val entries = document.get("entries") as? List<Map<String, Any>>
