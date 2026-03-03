@@ -174,12 +174,7 @@ class Planting : AppCompatActivity() {
                 }
                 
                 db.collection("plants").document(docId).update(updates).addOnSuccessListener {
-                    val pDialog = SweetAlertDialog(this, SweetAlertDialog.SUCCESS_TYPE)
-                    pDialog.titleText = "รดน้ำเรียบร้อย!"
-                    pDialog.contentText = "ต้นไม้สดชื่นขึ้นแล้ว"
-                    pDialog.confirmText = "ตกลง"
-                    pDialog.show()
-                    pDialog.getButton(SweetAlertDialog.BUTTON_CONFIRM).setBackgroundResource(R.drawable.btn_round_green)
+                    // Success modal removed for better user experience
                     
                     imgTree.animate().scaleX(1.1f).scaleY(1.1f).setDuration(100).withEndAction {
                         imgTree.animate().scaleX(1.0f).scaleY(1.0f).setDuration(100).start()
