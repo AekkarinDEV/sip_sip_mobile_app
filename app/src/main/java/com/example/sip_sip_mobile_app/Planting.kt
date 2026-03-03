@@ -109,7 +109,6 @@ class Planting : AppCompatActivity() {
     }
 
     private fun updateTreeDisplay(stage: Int, lastUpdated: Date) {
-        // Set tree image based on stage (1-8)
         val treeResId = when (stage) {
             1 -> R.drawable.tree_level_01
             2 -> R.drawable.tree_level_02
@@ -122,21 +121,32 @@ class Planting : AppCompatActivity() {
         }
         imgTree.setImageResource(treeResId)
 
-        // Apply health filter based on time since last water
         val diffInHours = (Date().time - lastUpdated.time) / (1000 * 60 * 60)
         when {
             diffInHours >= 48 -> {
-                // Dying - brown tint
                 imgTree.setColorFilter(Color.parseColor("#8B4513"), PorterDuff.Mode.MULTIPLY)
             }
             diffInHours >= 24 -> {
-                // Thirsty - yellowish tint
                 imgTree.setColorFilter(Color.parseColor("#D4D4A1"), PorterDuff.Mode.MULTIPLY)
             }
             else -> {
-                // Healthy - no tint
                 imgTree.clearColorFilter()
             }
+        }
+    }
+
+    private fun getThresholdForStage(stage: Int): Int {
+        // Total waterings required to reach the START of each stage
+        return when (stage) {
+            1 -> 0
+            2 -> 3        // +3 from stage 1
+            3 -> 7        // +4 from stage 2
+            4 -> 14       // +7 from stage 3
+            5 -> 24       // +10 from stage 4
+            6 -> 39       // +15 from stage 5
+            7 -> 60       // +21 from stage 6
+            8 -> 90       // +30 from stage 7
+            else -> 90
         }
     }
 
@@ -151,14 +161,15 @@ class Planting : AppCompatActivity() {
             val currentStage = doc.getLong("growth_stage")?.toInt() ?: 1
 
             if (currentBuckets > 0) {
+                val nextLevel = currentLevel + 1
                 val updates = hashMapOf<String, Any>(
                     "current_water_level" to FieldValue.increment(1),
                     "watering_cans_count" to FieldValue.increment(-1),
                     "last_updated" to FieldValue.serverTimestamp()
                 )
                 
-                // Example logic: advance stage every 10 waterings, up to stage 8
-                if ((currentLevel + 1) % 10 == 0 && currentStage < 8) {
+                // Check if next level meets the threshold for the next stage
+                if (currentStage < 8 && nextLevel >= getThresholdForStage(currentStage + 1)) {
                     updates["growth_stage"] = FieldValue.increment(1)
                 }
                 
@@ -170,7 +181,6 @@ class Planting : AppCompatActivity() {
                     pDialog.show()
                     pDialog.getButton(SweetAlertDialog.BUTTON_CONFIRM).setBackgroundResource(R.drawable.btn_round_green)
                     
-                    // Add a small scale animation when watering
                     imgTree.animate().scaleX(1.1f).scaleY(1.1f).setDuration(100).withEndAction {
                         imgTree.animate().scaleX(1.0f).scaleY(1.0f).setDuration(100).start()
                     }.start()
