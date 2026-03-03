@@ -251,7 +251,20 @@ class MainActivity : AppCompatActivity() {
 
                     if (totalIntake >= goal && !rewarded) {
                         awardWateringCan(user.uid)
-                        consumptionRef.update("goal_reached_rewarded", true)
+                        consumptionRef.update("goal_reached_rewarded", true).addOnSuccessListener {
+                            val rewardDialog = SweetAlertDialog(this@MainActivity, SweetAlertDialog.SUCCESS_TYPE)
+                            rewardDialog.titleText = "ยินดีด้วย!"
+                            rewardDialog.contentText = "คุณดื่มน้ำครบเป้าหมายแล้ว\nได้รับฝักบัว 1 อันสำหรับรดน้ำต้นไม้!"
+                            rewardDialog.confirmText = "ไปรดน้ำต้นไม้"
+                            rewardDialog.cancelText = "ตกลง"
+                            rewardDialog.showCancelButton(true)
+                            rewardDialog.setConfirmClickListener {
+                                it.dismissWithAnimation()
+                                startActivity(Intent(this@MainActivity, Planting::class.java))
+                            }
+                            rewardDialog.show()
+                            rewardDialog.getButton(SweetAlertDialog.BUTTON_CONFIRM).setBackgroundResource(R.drawable.btn_round_green)
+                        }
                     }
                 }
             }
@@ -316,6 +329,21 @@ class MainActivity : AppCompatActivity() {
                 val percentage = ((totalIntake.toFloat() / goal.toFloat()) * 100).toInt()
                 waterDropView.setProgress(percentage)
 
+                // UI feedback for goal achievement
+                if (totalIntake >= goal) {
+                    findViewById<TextView>(R.id.tvLabelStatus).apply {
+                        text = "ยินดีด้วย! คุณดื่มน้ำครบเป้าหมายแล้ว"
+                        setTextColor(Color.parseColor("#4CAF50")) // Green
+                    }
+                    waterDropView.setWaterColor(Color.parseColor("#4FC3F7"), Color.parseColor("#0288D1"))
+                } else {
+                    findViewById<TextView>(R.id.tvLabelStatus).apply {
+                        text = "วันนี้ดื่มน้ำไปแล้ว"
+                        setTextColor(Color.parseColor("#757575"))
+                    }
+                    waterDropView.setWaterColor(Color.parseColor("#81D4FA"), Color.parseColor("#29B6F6"))
+                }
+
                 layoutRecentEntries.removeAllViews()
                 val entries = document.get("entries") as? List<Map<String, Any>>
                 entries?.reversed()?.forEach { entry ->
@@ -333,7 +361,6 @@ class MainActivity : AppCompatActivity() {
                     tvVolume.text = "$volume ml"
                     imgIcon.setImageResource(getIconForType(type))
                     
-                    // Icon background is always Blue (#AED6F1)
                     cardIcon.setCardBackgroundColor(Color.parseColor("#AED6F1"))
 
                     try {
@@ -347,7 +374,6 @@ class MainActivity : AppCompatActivity() {
                     }
 
                     entryView.setOnClickListener {
-                        // When selected: Row background is Blue (Rounded), Icon stays Blue
                         entryView.setBackgroundResource(R.drawable.bg_recent_entry_selected)
                         confirmDeleteEntry(entry, entryView)
                     }
@@ -395,13 +421,11 @@ class MainActivity : AppCompatActivity() {
         }
 
         pDialog.setCancelClickListener {
-            // Restore original row background on cancel
             view.background = null
             it.cancel()
         }
 
         pDialog.setOnDismissListener {
-            // Restore original row background on dismiss
             view.background = null
         }
 
