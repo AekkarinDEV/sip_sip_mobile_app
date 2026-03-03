@@ -161,10 +161,10 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_columnWeight="1"
-                            app:cardBackgroundColor="#FFFFFF"
-                            app:cardCornerRadius="16dp"
                             android:clickable="true"
                             android:focusable="true"
+                            app:cardBackgroundColor="#FFFFFF"
+                            app:cardCornerRadius="16dp"
                             app:cardElevation="4dp">
 
                             <LinearLayout
@@ -200,10 +200,10 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_columnWeight="1"
-                            app:cardBackgroundColor="#FFFFFF"
-                            app:cardCornerRadius="16dp"
                             android:clickable="true"
                             android:focusable="true"
+                            app:cardBackgroundColor="#FFFFFF"
+                            app:cardCornerRadius="16dp"
                             app:cardElevation="4dp">
 
                             <LinearLayout
@@ -238,10 +238,10 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_columnWeight="1"
-                            app:cardBackgroundColor="#FFFFFF"
-                            app:cardCornerRadius="16dp"
                             android:clickable="true"
                             android:focusable="true"
+                            app:cardBackgroundColor="#FFFFFF"
+                            app:cardCornerRadius="16dp"
                             app:cardElevation="4dp">
 
                             <LinearLayout
@@ -276,10 +276,10 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_columnWeight="1"
-                            app:cardBackgroundColor="#FFFFFF"
-                            app:cardCornerRadius="16dp"
                             android:clickable="true"
                             android:focusable="true"
+                            app:cardBackgroundColor="#FFFFFF"
+                            app:cardCornerRadius="16dp"
                             app:cardElevation="4dp">
 
                             <LinearLayout
@@ -314,10 +314,10 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_columnWeight="1"
-                            app:cardBackgroundColor="#FFFFFF"
-                            app:cardCornerRadius="16dp"
                             android:clickable="true"
                             android:focusable="true"
+                            app:cardBackgroundColor="#FFFFFF"
+                            app:cardCornerRadius="16dp"
                             app:cardElevation="4dp">
 
                             <LinearLayout
@@ -352,10 +352,10 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_columnWeight="1"
-                            app:cardBackgroundColor="#FFFFFF"
-                            app:cardCornerRadius="16dp"
                             android:clickable="true"
                             android:focusable="true"
+                            app:cardBackgroundColor="#FFFFFF"
+                            app:cardCornerRadius="16dp"
                             app:cardElevation="4dp">
 
                             <LinearLayout
@@ -398,9 +398,10 @@
 
                     <androidx.core.widget.NestedScrollView
                         android:layout_width="match_parent"
-                        android:layout_height="250dp"
+                        android:layout_height="330dp"
                         android:layout_marginTop="16dp"
-                        android:overScrollMode="never">
+                        android:overScrollMode="never"
+                        android:paddingBottom="60dp">
 
                         <LinearLayout
                             android:id="@+id/layoutRecentEntries"
