@@ -78,7 +78,6 @@ class MainActivity : AppCompatActivity() {
         loadTodayIntake() 
         setupIntakeButtons()
         
-        // --- ส่วนที่เพิ่มสำหรับ Notification ---
         checkNotificationPermission()
         getAndLogFCMToken()
     }
@@ -93,17 +92,13 @@ class MainActivity : AppCompatActivity() {
 
     private fun getAndLogFCMToken() {
         FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
-            if (!task.isSuccessful) {
-                Log.w("FCM_TOKEN", "Fetching FCM registration token failed", task.exception)
-                return@addOnCompleteListener
-            }
-            val token = task.result
-            Log.d("FCM_TOKEN", "Current Token: $token")
-            
-            // อัปเดตลง Firestore ของ User คนนี้ด้วย (เพื่อให้รู้ว่าเครื่องไหนเป็นของใคร)
-            val userId = auth.currentUser?.uid
-            if (userId != null) {
-                db.collection("users").document(userId).update("fcmToken", token)
+            if (task.isSuccessful) {
+                val token = task.result
+                Log.d("FCM_TOKEN", "Current Token: $token")
+                val userId = auth.currentUser?.uid
+                if (userId != null) {
+                    db.collection("users").document(userId).update("fcmToken", token)
+                }
             }
         }
     }
@@ -209,14 +204,12 @@ class MainActivity : AppCompatActivity() {
 
         pDialog.setConfirmClickListener { sDialog ->
             logIntake(type, volume)
-
             sDialog.setTitleText("สำเร็จ!")
                 .setContentText("บันทึกเรียบร้อยแล้ว")
                 .setConfirmText("ตกลง")
                 .showCancelButton(false)
                 .setConfirmClickListener { it.dismissWithAnimation(); highlightCard(null) }
                 .changeAlertType(SweetAlertDialog.SUCCESS_TYPE)
-
             sDialog.getButton(SweetAlertDialog.BUTTON_CONFIRM).setBackgroundResource(R.drawable.btn_round_green)
         }
 
@@ -262,8 +255,6 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             }
-        }.addOnFailureListener { e -> 
-            Log.e("SipSipError", "Failed to log intake: ${e.message}") 
         }
     }
 
@@ -271,19 +262,10 @@ class MainActivity : AppCompatActivity() {
         val plantRef = db.collection("plants").document(userId)
         plantRef.get().addOnSuccessListener { document ->
             if (document.exists()) {
-                plantRef.update(
-                    "watering_cans_count", FieldValue.increment(1),
-                    "last_updated", com.google.firebase.Timestamp.now()
-                ).addOnFailureListener { e -> Log.e("SipSipError", "Update plant fail: ${e.message}") }
+                plantRef.update("watering_cans_count", FieldValue.increment(1), "last_updated", com.google.firebase.Timestamp.now())
             } else {
-                val newPlant = hashMapOf(
-                    "user_id" to userId,
-                    "growth_stage" to 1,
-                    "watering_cans_count" to 1L,
-                    "current_water_level" to 0,
-                    "last_updated" to com.google.firebase.Timestamp.now()
-                )
-                plantRef.set(newPlant).addOnFailureListener { e -> Log.e("SipSipError", "Create plant fail: ${e.message}") }
+                val newPlant = hashMapOf("user_id" to userId, "growth_stage" to 1, "watering_cans_count" to 1L, "current_water_level" to 0, "last_updated" to com.google.firebase.Timestamp.now())
+                plantRef.set(newPlant)
             }
         }
     }
@@ -325,7 +307,6 @@ class MainActivity : AppCompatActivity() {
 
         docRef.addSnapshotListener { document, error ->
             if (error != null) return@addSnapshotListener
-
             if (document != null && document.exists()) {
                 val totalIntake = document.getLong("total_intake_ml") ?: 0
                 val goal = document.getLong("goal_ml") ?: 2000
@@ -339,13 +320,21 @@ class MainActivity : AppCompatActivity() {
                 val entries = document.get("entries") as? List<Map<String, Any>>
                 entries?.reversed()?.forEach { entry ->
                     val type = entry["type"] as? String ?: "Water"
-                    val volume = entry["volume_ml"] ?: 0
+                    val volume = (entry["volume_ml"] as? Number)?.toInt() ?: 0
                     val timestamp = entry["timestamp"] as? String ?: ""
 
                     val entryView = LayoutInflater.from(this).inflate(R.layout.view_recent_entry, layoutRecentEntries, false)
-                    entryView.findViewById<TextView>(R.id.tvEntryType).text = type
-                    entryView.findViewById<TextView>(R.id.tvEntryVolume).text = "$volume ml"
-                    entryView.findViewById<ImageView>(R.id.imgEntryIcon).setImageResource(getIconForType(type))
+                    val tvType = entryView.findViewById<TextView>(R.id.tvEntryType)
+                    val tvVolume = entryView.findViewById<TextView>(R.id.tvEntryVolume)
+                    val imgIcon = entryView.findViewById<ImageView>(R.id.imgEntryIcon)
+                    val cardIcon = entryView.findViewById<CardView>(R.id.cardIconContainer)
+
+                    tvType.text = type
+                    tvVolume.text = "$volume ml"
+                    imgIcon.setImageResource(getIconForType(type))
+                    
+                    // Icon background is always Blue (#AED6F1)
+                    cardIcon.setCardBackgroundColor(Color.parseColor("#AED6F1"))
 
                     try {
                         val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault())
@@ -356,35 +345,81 @@ class MainActivity : AppCompatActivity() {
                     } catch (e: Exception) {
                         entryView.findViewById<TextView>(R.id.tvEntryTime).text = "--:--"
                     }
+
+                    entryView.setOnClickListener {
+                        // When selected: Row background is Blue (Rounded), Icon stays Blue
+                        entryView.setBackgroundResource(R.drawable.bg_recent_entry_selected)
+                        confirmDeleteEntry(entry, entryView)
+                    }
+
                     layoutRecentEntries.addView(entryView)
                 }
                 showTutorialIfNeeded()
             } else {
-                // ดึงข้อมูลจริงจาก Profile มาคำนวณเป้าหมายวันใหม่
                 db.collection("users").document(user.uid).get().addOnSuccessListener { userDoc ->
                     if (userDoc.exists()) {
                         val weight = userDoc.getDouble("weight") ?: 70.0
                         val genderStr = userDoc.getString("gender") ?: "ชาย"
                         val activityStr = userDoc.getString("activity") ?: "ไม่ออกกำลังกาย"
-                        
                         val gender = WaterIntakeCalculator.mapGender(genderStr)
                         val activityLevel = WaterIntakeCalculator.mapActivityLevel(activityStr)
                         val goalMl = WaterIntakeCalculator.calculateDailyWater(weight, gender, activityLevel)
-
-                        val initialData = hashMapOf(
-                            "user_id" to user.uid,
-                            "date" to today,
-                            "total_intake_ml" to 0L,
-                            "goal_ml" to goalMl.toLong(),
-                            "entries" to listOf<Map<String, Any>>(),
-                            "goal_reached_rewarded" to false
-                        )
-                        db.collection("consumptions").document("${user.uid}_$today").set(initialData)
-                            .addOnSuccessListener { showTutorialIfNeeded() }
+                        val initialData = hashMapOf("user_id" to user.uid, "date" to today, "total_intake_ml" to 0L, "goal_ml" to goalMl.toLong(), "entries" to listOf<Map<String, Any>>(), "goal_reached_rewarded" to false)
+                        db.collection("consumptions").document("${user.uid}_$today").set(initialData).addOnSuccessListener { showTutorialIfNeeded() }
                     }
                 }
             }
         }
+    }
+
+    private fun confirmDeleteEntry(entry: Map<String, Any>, view: View) {
+        val type = entry["type"] as? String ?: "Water"
+        val volume = (entry["volume_ml"] as? Number)?.toInt() ?: 0
+
+        val pDialog = SweetAlertDialog(this, SweetAlertDialog.WARNING_TYPE)
+        pDialog.titleText = "ลบรายการนี้?"
+        pDialog.contentText = "คุณต้องการลบ $type ($volume ml) ใช่หรือไม่?"
+        pDialog.confirmText = "ลบ"
+        pDialog.cancelText = "ยกเลิก"
+        pDialog.showCancelButton(true)
+
+        pDialog.setConfirmClickListener { sDialog ->
+            deleteIntakeEntry(entry)
+            sDialog.setTitleText("สำเร็จ!")
+                .setContentText("ลบรายการเรียบร้อยแล้ว")
+                .setConfirmText("ตกลง")
+                .showCancelButton(false)
+                .setConfirmClickListener { it.dismissWithAnimation() }
+                .changeAlertType(SweetAlertDialog.SUCCESS_TYPE)
+            sDialog.getButton(SweetAlertDialog.BUTTON_CONFIRM).setBackgroundResource(R.drawable.btn_round_red)
+        }
+
+        pDialog.setCancelClickListener {
+            // Restore original row background on cancel
+            view.background = null
+            it.cancel()
+        }
+
+        pDialog.setOnDismissListener {
+            // Restore original row background on dismiss
+            view.background = null
+        }
+
+        pDialog.show()
+        pDialog.getButton(SweetAlertDialog.BUTTON_CONFIRM).setBackgroundResource(R.drawable.btn_round_red)
+        pDialog.getButton(SweetAlertDialog.BUTTON_CANCEL).setBackgroundResource(R.drawable.btn_round_green)
+    }
+
+    private fun deleteIntakeEntry(entry: Map<String, Any>) {
+        val user = auth.currentUser ?: return
+        val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+        val volume = (entry["volume_ml"] as? Number)?.toLong() ?: 0L
+        val consumptionRef = db.collection("consumptions").document("${user.uid}_$today")
+
+        consumptionRef.update(
+            "entries", FieldValue.arrayRemove(entry),
+            "total_intake_ml", FieldValue.increment(-volume)
+        )
     }
 
     private fun observeUserProfile() {
@@ -395,7 +430,6 @@ class MainActivity : AppCompatActivity() {
                 if (document != null && document.exists()) {
                     val name = document.getString("username") ?: document.getString("name") ?: "User"
                     findViewById<TextView>(R.id.tvUsername).text = name
-                    
                     val avatarUrl = document.getString("avatarUrl")
                     if (!avatarUrl.isNullOrEmpty()) {
                         Glide.with(this).load(avatarUrl).placeholder(R.drawable.profile).into(findViewById<ImageView>(R.id.imgAvatar))

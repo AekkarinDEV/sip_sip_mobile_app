@@ -74,4 +74,9 @@ dependencies {
 
     // Tutorial Coach Marks
     implementation("com.getkeepsafe.taptargetview:taptargetview:1.13.3")
+
+    // Testing
+    testImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.espresso.core)
 }
