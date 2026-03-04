@@ -82,7 +82,7 @@ class UserSetup : AppCompatActivity() {
         val btnBack = findViewById<TextView>(R.id.btnBack)
 
         // Dropdowns
-        val genders = listOf("ชาย", "หญิง", "อื่น ๆ")
+        val genders = listOf("ชาย", "หญิง")
         etGender.setAdapter(ArrayAdapter(this, android.R.layout.simple_list_item_1, genders))
         
         val activities = listOf("ไม่ออกกำลังกาย", "เล็กน้อย", "ปานกลาง", "หนัก")

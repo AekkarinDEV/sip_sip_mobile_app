@@ -181,7 +181,7 @@ class Settings : AppCompatActivity() {
     }
 
     private fun setupDropdowns() {
-        val genders = arrayOf("ชาย", "หญิง", "อื่นๆ")
+        val genders = arrayOf("ชาย", "หญิง")
         val genderAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, genders)
         etGenderEdit.setAdapter(genderAdapter)
 
@@ -342,6 +342,7 @@ class Settings : AppCompatActivity() {
 
     private fun scheduleWaterReminder() {
         val reminderRequest = PeriodicWorkRequestBuilder<WaterReminderWorker>(2, TimeUnit.HOURS)
+            .setInitialDelay(2, TimeUnit.HOURS) // รอ 2 ชั่วโมงก่อนเริ่มแจ้งเตือนครั้งแรก (ไม่เด้งทันทีที่กดบันทึก)
             .addTag(REMINDER_WORK_NAME)
             .build()
 
