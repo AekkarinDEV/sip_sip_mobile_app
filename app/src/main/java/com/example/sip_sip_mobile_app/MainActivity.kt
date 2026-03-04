@@ -71,12 +71,13 @@ class MainActivity : AppCompatActivity() {
             findViewById(R.id.cardLarge), findViewById(R.id.cardCustom)
         )
 
+        setupIntakeButtons()
+
         val bottomNavView = findViewById<View>(R.id.layout_bottom_nav)
         BottomNavManager(this, bottomNavView).setupBottomNavigation()
 
         observeUserProfile()
         loadTodayIntake() 
-        setupIntakeButtons()
         
         checkNotificationPermission()
         getAndLogFCMToken()
@@ -144,7 +145,7 @@ class MainActivity : AppCompatActivity() {
                             .tintTarget(false)
                             .transparentTarget(true),
 
-                        TapTarget.forView(findViewById(R.id.RecentEntries), "(4/5) ประวัติการดื่ม", "ตรวจสอบรายการน้ำที่คุณเพิ่งดื่มไปในวันนี้ได้จากส่วนนี้")
+                        TapTarget.forView(findViewById(R.id.RecentEntries), "(4/5) ประวัติการดื่ม", "ตรวจสอบรายการน้ำที่คุณเพิ่งดื่มไปในวันนี้ได้จากส่วนนี้\nกดที่รายการเพื่อลบ!")
                             .outerCircleColor(R.color.blue_light)
                             .targetCircleColor(R.color.white)
                             .titleTextSize(22)
@@ -223,51 +224,85 @@ class MainActivity : AppCompatActivity() {
     private fun logIntake(type: String, volume: Int, existingDialog: SweetAlertDialog? = null) {
         val user = auth.currentUser ?: return
         val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-        val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault())
-        sdf.timeZone = TimeZone.getTimeZone("UTC")
+        val consumptionRef = db.collection("consumptions").document("${user.uid}_$today")
 
+        // Check if today's document exists first
+        consumptionRef.get().addOnSuccessListener { doc ->
+            if (!doc.exists()) {
+                // If not exists, create it with user's current goal settings
+                db.collection("users").document(user.uid).get().addOnSuccessListener { userDoc ->
+                    val weight = userDoc.getDouble("weight") ?: 70.0
+                    val genderStr = userDoc.getString("gender") ?: "ชาย"
+                    val activityStr = userDoc.getString("activity") ?: "ไม่ออกกำลังกาย"
+                    val goalMl = WaterIntakeCalculator.calculateDailyWater(
+                        weight, 
+                        WaterIntakeCalculator.mapGender(genderStr), 
+                        WaterIntakeCalculator.mapActivityLevel(activityStr)
+                    )
+                    
+                    val initialData = hashMapOf(
+                        "user_id" to user.uid,
+                        "date" to today,
+                        "total_intake_ml" to 0L,
+                        "goal_ml" to goalMl.toLong(),
+                        "entries" to listOf<Map<String, Any>>(),
+                        "goal_reached_rewarded" to false
+                    )
+                    consumptionRef.set(initialData).addOnSuccessListener {
+                        performIntakeUpdate(consumptionRef, type, volume, existingDialog)
+                    }
+                }
+            } else {
+                performIntakeUpdate(consumptionRef, type, volume, existingDialog)
+            }
+        }.addOnFailureListener {
+            existingDialog?.dismissWithAnimation()
+            Log.e("MainActivity", "Error checking today intake doc", it)
+        }
+    }
+
+    private fun performIntakeUpdate(docRef: com.google.firebase.firestore.DocumentReference, type: String, volume: Int, existingDialog: SweetAlertDialog?) {
+        val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault()).apply {
+            timeZone = TimeZone.getTimeZone("UTC")
+        }
         val entry = hashMapOf(
             "entry_id" to UUID.randomUUID().toString(),
             "type" to type,
             "volume_ml" to volume,
             "timestamp" to sdf.format(Date()),
-            "user_id" to user.uid
+            "user_id" to auth.currentUser?.uid
         )
 
-        val consumptionRef = db.collection("consumptions").document("${user.uid}_$today")
-        
-        consumptionRef.update(
+        docRef.update(
             "entries", FieldValue.arrayUnion(entry),
             "total_intake_ml", FieldValue.increment(volume.toLong())
         ).addOnSuccessListener {
-            consumptionRef.get().addOnSuccessListener { doc ->
-                if (doc.exists()) {
-                    val totalIntake = doc.getLong("total_intake_ml") ?: 0L
-                    val goal = doc.getLong("goal_ml") ?: 2000L
-                    val rewarded = doc.getBoolean("goal_reached_rewarded") ?: false
+            docRef.get().addOnSuccessListener { doc ->
+                val totalIntake = doc.getLong("total_intake_ml") ?: 0L
+                val goal = doc.getLong("goal_ml") ?: 2000L
+                val rewarded = doc.getBoolean("goal_reached_rewarded") ?: false
 
-                    if (totalIntake >= goal && !rewarded) {
-                        awardWateringCan(user.uid)
-                        consumptionRef.update("goal_reached_rewarded", true).addOnSuccessListener {
-                            val dialog = existingDialog ?: SweetAlertDialog(this@MainActivity, SweetAlertDialog.SUCCESS_TYPE)
-                            dialog.setTitleText("ยินดีด้วย!")
-                                .setContentText("คุณดื่มน้ำครบเป้าหมายแล้ว\nได้รับฝักบัว 1 อันสำหรับรดน้ำต้นไม้!")
-                                .setConfirmText("ตกลง")
-                                .showCancelButton(false)
-                                .setConfirmClickListener { it.dismissWithAnimation(); highlightCard(null) }
-                                .changeAlertType(SweetAlertDialog.SUCCESS_TYPE)
-                            if (existingDialog == null) dialog.show()
-                            dialog.getButton(SweetAlertDialog.BUTTON_CONFIRM).setBackgroundResource(R.drawable.btn_round_green)
-                        }
-                    } else if (existingDialog != null) {
-                        existingDialog.setTitleText("สำเร็จ!")
-                            .setContentText("บันทึกเรียบร้อยแล้ว")
+                if (totalIntake >= goal && !rewarded) {
+                    awardWateringCan(auth.currentUser!!.uid)
+                    docRef.update("goal_reached_rewarded", true).addOnSuccessListener {
+                        val dialog = existingDialog ?: SweetAlertDialog(this, SweetAlertDialog.SUCCESS_TYPE)
+                        dialog.setTitleText("ยินดีด้วย!")
+                            .setContentText("คุณดื่มน้ำครบเป้าหมายแล้ว\nได้รับฝักบัว 1 อันสำหรับรดน้ำต้นไม้!")
                             .setConfirmText("ตกลง")
                             .showCancelButton(false)
                             .setConfirmClickListener { it.dismissWithAnimation(); highlightCard(null) }
                             .changeAlertType(SweetAlertDialog.SUCCESS_TYPE)
-                        existingDialog.getButton(SweetAlertDialog.BUTTON_CONFIRM).setBackgroundResource(R.drawable.btn_round_green)
+                        if (existingDialog == null) dialog.show()
+                        dialog.getButton(SweetAlertDialog.BUTTON_CONFIRM).setBackgroundResource(R.drawable.btn_round_green)
                     }
+                } else if (existingDialog != null) {
+                    existingDialog.setTitleText("สำเร็จ!")
+                        .setContentText("บันทึกเรียบร้อยแล้ว")
+                        .setConfirmText("ตกลง")
+                        .showCancelButton(false)
+                        .setConfirmClickListener { it.dismissWithAnimation(); highlightCard(null) }
+                        .changeAlertType(SweetAlertDialog.SUCCESS_TYPE)
+                    existingDialog.getButton(SweetAlertDialog.BUTTON_CONFIRM).setBackgroundResource(R.drawable.btn_round_green)
                 }
             }
         }
@@ -277,9 +312,15 @@ class MainActivity : AppCompatActivity() {
         val plantRef = db.collection("plants").document(userId)
         plantRef.get().addOnSuccessListener { document ->
             if (document.exists()) {
-                plantRef.update("watering_cans_count", FieldValue.increment(1), "last_updated", com.google.firebase.Timestamp.now())
+                plantRef.update("watering_cans_count", FieldValue.increment(1))
             } else {
-                val newPlant = hashMapOf("user_id" to userId, "growth_stage" to 1, "watering_cans_count" to 1L, "current_water_level" to 0, "last_updated" to com.google.firebase.Timestamp.now())
+                val newPlant = hashMapOf(
+                    "user_id" to userId, 
+                    "growth_stage" to 1, 
+                    "watering_cans_count" to 1L, 
+                    "current_water_level" to 0, 
+                    "last_updated" to com.google.firebase.Timestamp(Date(0))
+                )
                 plantRef.set(newPlant)
             }
         }

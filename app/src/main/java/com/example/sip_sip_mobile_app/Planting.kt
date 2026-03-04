@@ -3,6 +3,7 @@ package com.example.sip_sip_mobile_app
 import android.graphics.Color
 import android.graphics.PorterDuff
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
@@ -13,6 +14,7 @@ import cn.pedant.SweetAlert.SweetAlertDialog
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 import java.util.*
 
 class Planting : AppCompatActivity() {
@@ -24,6 +26,7 @@ class Planting : AppCompatActivity() {
     private lateinit var tvWaterAmount: TextView
     private lateinit var tvStreakCount: TextView
     private lateinit var imgFire: ImageView
+    private var userListener: com.google.firebase.firestore.ListenerRegistration? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -56,18 +59,23 @@ class Planting : AppCompatActivity() {
 
     private fun listenToPlantData() {
         val uid = auth.currentUser?.uid ?: return
-        db.collection("plants")
-            .whereEqualTo("user_id", uid)
-            .addSnapshotListener { snapshots, e ->
-                if (e != null || snapshots == null) return@addSnapshotListener
-                if (!snapshots.isEmpty) {
-                    val doc = snapshots.documents[0]
-                    val currentWaterLevel = doc.getLong("current_water_level")?.toInt() ?: 0
-                    val wateringCans = doc.getLong("watering_cans_count")?.toInt() ?: 0
-                    val growthStage = doc.getLong("growth_stage")?.toInt() ?: 1
-                    val lastUpdated = doc.getTimestamp("last_updated")?.toDate() ?: Date()
+        db.collection("plants").document(uid)
+            .addSnapshotListener { document, e ->
+                if (e != null || document == null) return@addSnapshotListener
+                if (document.exists()) {
+                    val currentWaterLevel = (document.get("current_water_level") as? Number)?.toInt() ?: 0
+                    val wateringCans = (document.get("watering_cans_count") as? Number)?.toInt() ?: 0
+                    val growthStage = (document.get("growth_stage") as? Number)?.toInt() ?: 1
+                    
+                    val lastUpdatedRaw = document.get("last_updated")
+                    val lastUpdated = when (lastUpdatedRaw) {
+                        is com.google.firebase.Timestamp -> lastUpdatedRaw.toDate()
+                        is Date -> lastUpdatedRaw
+                        else -> Date(0)
+                    }
 
-                    fetchUserStreak(uid)
+                    checkStreakDecay(uid, lastUpdated)
+                    
                     tvCount.text = currentWaterLevel.toString()
                     tvWaterAmount.text = wateringCans.toString()
                     updateTreeDisplay(growthStage, lastUpdated)
@@ -75,13 +83,32 @@ class Planting : AppCompatActivity() {
                     createNewPlantEntry(uid)
                 }
             }
+        listenToUserData(uid)
     }
 
-    private fun fetchUserStreak(uid: String) {
-        db.collection("users").document(uid).get().addOnSuccessListener { doc ->
-            val streak = doc.getLong("streak_count")?.toInt() ?: 0
-            tvStreakCount.text = streak.toString()
-            updateFireIconColor(streak)
+    private fun listenToUserData(uid: String) {
+        userListener?.remove()
+        userListener = db.collection("users").document(uid)
+            .addSnapshotListener { document, e ->
+                if (e != null || document == null || !document.exists()) return@addSnapshotListener
+                
+                val streakRaw = document.get("streak_count")
+                val streak = when (streakRaw) {
+                    is Number -> streakRaw.toInt()
+                    is String -> streakRaw.toIntOrNull() ?: 0
+                    else -> 0
+                }
+                
+                tvStreakCount.text = streak.toString()
+                updateFireIconColor(streak)
+            }
+    }
+
+    private fun checkStreakDecay(uid: String, lastUpdated: Date) {
+        if (lastUpdated.time == 0L) return
+
+        if (!isToday(lastUpdated) && !isYesterday(lastUpdated)) {
+            db.collection("users").document(uid).set(mapOf("streak_count" to 0), SetOptions.merge())
         }
     }
 
@@ -91,9 +118,9 @@ class Planting : AppCompatActivity() {
             "growth_stage" to 1,
             "watering_cans_count" to 0,
             "current_water_level" to 0,
-            "last_updated" to com.google.firebase.Timestamp.now()
+            "last_updated" to com.google.firebase.Timestamp(Date(0))
         )
-        db.collection("plants").add(newPlant)
+        db.collection("plants").document(uid).set(newPlant)
     }
 
     private fun updateFireIconColor(streak: Int) {
@@ -121,6 +148,11 @@ class Planting : AppCompatActivity() {
         }
         imgTree.setImageResource(treeResId)
 
+        if (lastUpdated.time == 0L) {
+            imgTree.clearColorFilter()
+            return
+        }
+
         val diffInHours = (Date().time - lastUpdated.time) / (1000 * 60 * 60)
         when {
             diffInHours >= 48 -> {
@@ -136,29 +168,34 @@ class Planting : AppCompatActivity() {
     }
 
     private fun getThresholdForStage(stage: Int): Int {
-        // Total waterings required to reach the START of each stage
         return when (stage) {
             1 -> 0
-            2 -> 3        // +3 from stage 1
-            3 -> 7        // +4 from stage 2
-            4 -> 14       // +7 from stage 3
-            5 -> 24       // +10 from stage 4
-            6 -> 39       // +15 from stage 5
-            7 -> 60       // +21 from stage 6
-            8 -> 90       // +30 from stage 7
+            2 -> 3
+            3 -> 7
+            4 -> 14
+            5 -> 24
+            6 -> 39
+            7 -> 60
+            8 -> 90
             else -> 90
         }
     }
 
     private fun handleWatering() {
         val uid = auth.currentUser?.uid ?: return
-        db.collection("plants").whereEqualTo("user_id", uid).get().addOnSuccessListener { snapshots ->
-            if (snapshots.isEmpty) return@addOnSuccessListener
-            val doc = snapshots.documents[0]
-            val docId = doc.id
-            val currentBuckets = doc.getLong("watering_cans_count")?.toInt() ?: 0
-            val currentLevel = doc.getLong("current_water_level")?.toInt() ?: 0
-            val currentStage = doc.getLong("growth_stage")?.toInt() ?: 1
+        db.collection("plants").document(uid).get().addOnSuccessListener { document ->
+            if (!document.exists()) return@addOnSuccessListener
+            
+            val currentBuckets = (document.get("watering_cans_count") as? Number)?.toInt() ?: 0
+            val currentLevel = (document.get("current_water_level") as? Number)?.toInt() ?: 0
+            val currentStage = (document.get("growth_stage") as? Number)?.toInt() ?: 1
+            
+            val lastWateredRaw = document.get("last_updated")
+            val lastWatered = when (lastWateredRaw) {
+                is com.google.firebase.Timestamp -> lastWateredRaw.toDate()
+                is Date -> lastWateredRaw
+                else -> Date(0)
+            }
 
             if (currentBuckets > 0) {
                 val nextLevel = currentLevel + 1
@@ -168,13 +205,12 @@ class Planting : AppCompatActivity() {
                     "last_updated" to FieldValue.serverTimestamp()
                 )
                 
-                // Check if next level meets the threshold for the next stage
                 if (currentStage < 8 && nextLevel >= getThresholdForStage(currentStage + 1)) {
                     updates["growth_stage"] = FieldValue.increment(1)
                 }
                 
-                db.collection("plants").document(docId).update(updates).addOnSuccessListener {
-                    // Success modal removed for better user experience
+                db.collection("plants").document(uid).update(updates).addOnSuccessListener {
+                    updateStreakAfterWatering(uid, lastWatered)
                     
                     imgTree.animate().scaleX(1.1f).scaleY(1.1f).setDuration(100).withEndAction {
                         imgTree.animate().scaleX(1.0f).scaleY(1.0f).setDuration(100).start()
@@ -184,5 +220,49 @@ class Planting : AppCompatActivity() {
                 SweetAlertDialog(this, SweetAlertDialog.ERROR_TYPE).setTitleText("น้ำหมด!").setContentText("ไปดื่มน้ำเพิ่มเพื่อรับฝักบัวนะ").show()
             }
         }
+    }
+
+    private fun updateStreakAfterWatering(uid: String, lastWatered: Date) {
+        val userRef = db.collection("users").document(uid)
+        userRef.get().addOnSuccessListener { userDoc ->
+            val streakRaw = userDoc.get("streak_count")
+            val currentStreak = when (streakRaw) {
+                is Number -> streakRaw.toInt()
+                is String -> streakRaw.toIntOrNull() ?: 0
+                else -> 0
+            }
+            
+            val newStreak = when {
+                isToday(lastWatered) -> currentStreak
+                isYesterday(lastWatered) -> currentStreak + 1
+                else -> 1
+            }
+            
+            if (newStreak != currentStreak || streakRaw == null) {
+                userRef.set(mapOf("streak_count" to newStreak), SetOptions.merge())
+                    .addOnSuccessListener {
+                        Log.d("Planting", "Streak updated for user $uid to $newStreak")
+                    }
+            }
+        }
+    }
+
+    private fun isToday(date: Date): Boolean {
+        val now = Calendar.getInstance()
+        val target = Calendar.getInstance().apply { time = date }
+        return now.get(Calendar.YEAR) == target.get(Calendar.YEAR) &&
+                now.get(Calendar.DAY_OF_YEAR) == target.get(Calendar.DAY_OF_YEAR)
+    }
+
+    private fun isYesterday(date: Date): Boolean {
+        val yesterday = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -1) }
+        val target = Calendar.getInstance().apply { time = date }
+        return yesterday.get(Calendar.YEAR) == target.get(Calendar.YEAR) &&
+                yesterday.get(Calendar.DAY_OF_YEAR) == target.get(Calendar.DAY_OF_YEAR)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        userListener?.remove()
     }
 }
