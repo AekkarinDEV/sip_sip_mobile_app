@@ -21,7 +21,7 @@ class SplashActivity : AppCompatActivity() {
 
         val logo = findViewById<ImageView>(R.id.imgLogo)
 
-        // animation โลโก้
+        //animation โลโก้
         val anim = AnimationUtils.loadAnimation(this, R.anim.logo_anim)
         logo.startAnimation(anim)
 
@@ -34,19 +34,19 @@ class SplashActivity : AppCompatActivity() {
     private fun checkUser() {
         val user = auth.currentUser
 
-        // ❌ ยังไม่ login
+        //ยังไม่ login
         if (user == null) {
             goLogin()
             return
         }
 
-        // ✅ login แล้ว → เช็ค Firestore
+        //login แล้ว → เช็ค Firestore
         db.collection("users")
             .document(user.uid)
             .get()
             .addOnSuccessListener { doc ->
 
-                // ❌ user หาย (ลบ app data / db พัง)
+                //user หาย (ลบ app data / db พัง)
                 if (!doc.exists()) {
                     forceLogout()
                     return@addOnSuccessListener
@@ -64,7 +64,7 @@ class SplashActivity : AppCompatActivity() {
                 finish()
             }
             .addOnFailureListener {
-                // ❌ network / token error
+                //network / token error
                 forceLogout()
             }
     }
