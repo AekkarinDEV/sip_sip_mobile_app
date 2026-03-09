@@ -73,6 +73,11 @@ class MainActivity : AppCompatActivity() {
 
         setupIntakeButtons()
 
+        // Setup Header Click to Settings
+        findViewById<CardView>(R.id.cardHeader).setOnClickListener {
+            startActivity(Intent(this, Settings::class.java))
+        }
+
         val bottomNavView = findViewById<View>(R.id.layout_bottom_nav)
         BottomNavManager(this, bottomNavView).setupBottomNavigation()
 
@@ -482,7 +487,11 @@ class MainActivity : AppCompatActivity() {
             .addSnapshotListener { document, _ ->
                 if (document != null && document.exists()) {
                     val name = document.getString("username") ?: document.getString("name") ?: "User"
+                    val email = document.getString("email") ?: user.email ?: ""
+                    
                     findViewById<TextView>(R.id.tvUsername).text = name
+                    findViewById<TextView>(R.id.tvUserEmail).text = email
+
                     val avatarUrl = document.getString("avatarUrl")
                     if (!avatarUrl.isNullOrEmpty()) {
                         Glide.with(this).load(avatarUrl).placeholder(R.drawable.profile).into(findViewById<ImageView>(R.id.imgAvatar))
