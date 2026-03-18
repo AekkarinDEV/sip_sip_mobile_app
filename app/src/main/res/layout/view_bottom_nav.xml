@@ -14,9 +14,11 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center"
-        android:padding="6dp"
+        android:paddingTop="2dp"
+        android:paddingBottom="6dp"
         android:weightSum="4">
 
+        <!-- Home -->
         <LinearLayout
             android:id="@+id/btnHome"
             android:layout_width="0dp"
@@ -28,21 +30,35 @@
             android:focusable="true"
             android:background="?attr/selectableItemBackgroundBorderless">
 
+            <View
+                android:id="@+id/indicatorHome"
+                android:layout_width="36dp"
+                android:layout_height="1.5dp"
+                android:layout_marginBottom="6dp"
+                android:background="@drawable/bg_nav_indicator"
+                android:visibility="gone"
+                tools:visibility="visible"/>
+
             <ImageView
-                android:layout_width="30dp"
-                android:layout_height="30dp"
+                android:id="@+id/imgHome"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
                 android:src="@drawable/homepageicon1"
+                android:alpha="0.5"
                 tools:ignore="ContentDescription"/>
 
             <TextView
+                android:id="@+id/tvHome"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
                 android:text="@string/nav_home"
                 android:textSize="10sp"
+                android:textColor="#888888"
                 tools:text="หน้าหลัก"/>
         </LinearLayout>
 
+        <!-- Stat -->
         <LinearLayout
             android:id="@+id/btnStat"
             android:layout_width="0dp"
@@ -54,21 +70,34 @@
             android:focusable="true"
             android:background="?attr/selectableItemBackgroundBorderless">
 
+            <View
+                android:id="@+id/indicatorStat"
+                android:layout_width="36dp"
+                android:layout_height="1.5dp"
+                android:layout_marginBottom="6dp"
+                android:background="@drawable/bg_nav_indicator"
+                android:visibility="gone"/>
+
             <ImageView
-                android:layout_width="30dp"
-                android:layout_height="30dp"
+                android:id="@+id/imgStat"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
                 android:src="@drawable/statisticsicon1"
+                android:alpha="0.5"
                 tools:ignore="ContentDescription"/>
 
             <TextView
+                android:id="@+id/tvStat"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
                 android:text="@string/nav_stat"
                 android:textSize="10sp"
+                android:textColor="#888888"
                 tools:text="สถิติ"/>
         </LinearLayout>
 
+        <!-- Tree -->
         <LinearLayout
             android:id="@+id/btnTree"
             android:layout_width="0dp"
@@ -80,21 +109,34 @@
             android:focusable="true"
             android:background="?attr/selectableItemBackgroundBorderless">
 
+            <View
+                android:id="@+id/indicatorTree"
+                android:layout_width="36dp"
+                android:layout_height="1.5dp"
+                android:layout_marginBottom="6dp"
+                android:background="@drawable/bg_nav_indicator"
+                android:visibility="gone"/>
+
             <ImageView
-                android:layout_width="30dp"
-                android:layout_height="30dp"
+                android:id="@+id/imgTree"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
                 android:src="@drawable/oaktreeicon1"
+                android:alpha="0.5"
                 tools:ignore="ContentDescription"/>
 
             <TextView
+                android:id="@+id/tvTree"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
                 android:text="@string/nav_tree"
                 android:textSize="10sp"
+                android:textColor="#888888"
                 tools:text="ต้นไม้"/>
         </LinearLayout>
 
+        <!-- Setting -->
         <LinearLayout
             android:id="@+id/btnSetting"
             android:layout_width="0dp"
@@ -106,18 +148,30 @@
             android:focusable="true"
             android:background="?attr/selectableItemBackgroundBorderless">
 
+            <View
+                android:id="@+id/indicatorSetting"
+                android:layout_width="36dp"
+                android:layout_height="1.5dp"
+                android:layout_marginBottom="6dp"
+                android:background="@drawable/bg_nav_indicator"
+                android:visibility="gone"/>
+
             <ImageView
-                android:layout_width="30dp"
-                android:layout_height="30dp"
+                android:id="@+id/imgSetting"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
                 android:src="@drawable/settingicon3"
+                android:alpha="0.5"
                 tools:ignore="ContentDescription"/>
 
             <TextView
+                android:id="@+id/tvSetting"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
                 android:text="@string/nav_setting"
                 android:textSize="10sp"
+                android:textColor="#888888"
                 tools:text="ตั้งค่า"/>
         </LinearLayout>
 
