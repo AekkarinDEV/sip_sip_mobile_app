@@ -151,14 +151,14 @@ Minimum SDK: **29**
 
 | สมัครสมาชิก | ล็อกอิน | ลืมรหัสผ่าน |
 |---|---|---|
-| <img src="https://github.com/user-attachments/assets/5ecd7725-1d44-472c-a856-8c2b9cc9121d" width="220"/> | <img src="https://github.com/user-attachments/assets/09c94e61-33f7-4746-a6f1-fbfd34ced2a4" width="220"/> | <img src="https://github.com/user-attachments/assets/c5bf5803-8829-4a58-9285-dfa075c74879" width="220"/> |
+| <img src="https://github.com/user-attachments/assets/0116ba59-5813-4d46-b78b-69b77117c380" width="220"/> | <img src="https://github.com/user-attachments/assets/8fc8e26c-534a-45d1-bc2b-dabf048cc269" width="220"/> | <img src="https://github.com/user-attachments/assets/c3e5a32d-13cc-474c-9073-c52c309d7c8e" width="220"/> |
 
 | ตั้งค่าผู้ใช้ | เพิ่มรูปโปรไฟล์ | หน้าหลัก |
 |---|---|---|
-| <img src="https://github.com/user-attachments/assets/41f5ed0d-213e-438a-a075-fb0d15536248" width="220"/> | <img src="https://github.com/user-attachments/assets/1fef7706-4c14-4833-b267-11f687235542" width="220"/> | <img src="https://github.com/user-attachments/assets/48c484ed-2ac2-4839-9349-0df2cfee4c31" width="220"/> |
+| <img src="https://github.com/user-attachments/assets/b27c7ade-a0c2-407e-a85f-b23bf0587d5a" width="220"/> | <img src="https://github.com/user-attachments/assets/d0df2d95-96ef-4f8e-8d39-057e02f6b539" width="220"/> | <img src="https://github.com/user-attachments/assets/eff1a9fd-a517-40bc-8209-2a44f0bcb57f" width="220"/> |
 
 | สถิติ | ระบบปลูกต้นไม้ | การตั้งค่า |
 |---|---|---|
-| <img src="https://github.com/user-attachments/assets/8545ac84-7849-44e0-a67b-63068b486545" width="220"/> | <img src="https://github.com/user-attachments/assets/ce4b8b75-864c-4eb5-9333-9642be4b2ca5" width="220"/> | <img src="https://github.com/user-attachments/assets/9e159fc0-5fb6-4676-b3dd-4988778e1042" width="220"/> |
+| <img src="https://github.com/user-attachments/assets/a49e83df-5ae1-4f3e-b28b-d6dc501c96b6" width="220"/> | <img src="https://github.com/user-attachments/assets/4dd65fc3-f723-490f-a113-9768cd49225b" width="220"/> | <img src="https://github.com/user-attachments/assets/dada8a9d-0243-4cf4-a9a7-33668eeb9a47" width="220"/> |
 
 ---
